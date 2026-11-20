@@ -1,0 +1,14 @@
+{
+  "name": "neolink-cosmos-desktop",
+  "productName": "NeoCosmos",
+  "version": "10.18.9",
+  "description": "NeoCosmos · 关系优先的知识网络 —— 本地优先的桌面版纯净客户端（不含内置知识库 · 离线优先）",
+  "main": "main.js",
+  "author": "宋锦涛",
+  "contact": "13869162267",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新手引导 · NeoCosmos 离线帮助</title>
+  <link rel="stylesheet" href="help.css">
+</head>
+<body>
+  <header>
+    <h1>① 新手引导</h1>
+    <div class="sub">五分钟，从空白到你的第一片星空</div>
+    <nav class="top">
+      <a href="index.html">首页</a>
+      <a href="getting-started.html">新手引导</a>
+      <a href="features.html">功能详解</a>
+      <a href="shortcuts.html">快捷键</a>
+      <a href="faq.html">常见问题</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <figure class="figure">
+      <img class="hero" src="media/help-node-detail.png" alt="节点详情视图示意">
+      <figcaption>节点详情视图：选中任意一张卡片，右侧展开其内容与关系面板。</figcaption>
+    </figure>
+
+    <h2>第一步：首次启动</h2>
+    <ol class="steps">
+      <li>双击桌面或开始菜单中的 <b>NeoCosmos</b>。首次启动会创建本地仓库（默认位于你的用户文档目录下的 <code>NeoCosmosVault</code>）。</li>
+      <li>无需注册、无需联网。若系统弹出防火墙提示，<b>拒绝其联网权限</b>也完全不影响使用——本应用默认不访问网络。</li>
+      <li>进入主界面后，你会看到一片可旋转的星空画布。中央提示「点击空白处新建节点」。</li>
+    </ol>
+
+    <h2>第二步：建立第一张知识卡片</h2>
+    <p>在空白画布上<b>双击</b>，或按下 <kbd>N</kbd>，即可新建一张节点卡片。每张卡片至少包含：</p>
+    <table>
+      <thead><tr><th>字段</th><th>说明</th><th>是否必填</th></tr></thead>
+      <tbody>
+        <tr><td>标题</td><td>卡片的核心名称，例如「项目Alpha」「客户乙公司」</td><td>是</td></tr>
+        <tr><td>正文</td><td>任意笔记、摘要、引用或观察记录</td><td>否</td></tr>
+        <tr><td>类型</td><td>人物 / 组织 / 概念 / 事件 / 文件 等，用于着色与筛选</td><td>否（默认「概念」）</td></tr>
+        <tr><td>标签</td><td>自由文本标签，支持多值，便于后续检索</td><td>否</td></tr>
+      </tbody>
+    </table>
+    <div class="note">命名建议：用你<b>将来会搜索的词</b>作标题。关系是本应用的第一公民，标题越「可检索」，星空越有价值。</div>
+
+    <h2>第三步：连出第一条关系</h2>
+    <ol class="steps">
+      <li>将鼠标悬停在一张卡片上，会出现一个向外的小箭头手柄。</li>
+      <li>按住手柄拖拽到另一张卡片，松开即建立一条<b>有向关系</b>。</li>
+      <li>双击关系连线，可为它命名，例如「汇报给」「引用」「导致」「属于」。</li>
+    </ol>
+    <div class="note ok"><b>关系即结构：</b>NeoCosmos 不强求你预先分类。先记录，再连关系；关系会自动生长出你的知识拓扑，比文件夹更符合人脑的记忆方式。</div>
+
+    <h2>第四步：检索与回归</h2>
+    <p>按下 <kbd>Ctrl</kbd> + <kbd>K</kbd> 唤起全局搜索，输入任意关键词即可在节点标题、正文与标签中即时匹配。选中结果会高亮其在星空中的位置。</p>
+
+    <h2>第五步：保存与备份</h2>
+    <p>所有改动实时写入本地仓库（无需手动保存）。建议定期把整个 <code>NeoCosmosVault</code> 文件夹复制到移动硬盘或你信任的离线介质。详见 <a class="inline" href="faq.html">常见问题 → 数据存哪、如何备份</a>。</p>
+
+    <a class="back" href="index.html">← 返回帮助首页</a>
+    <a class="back" href="features.html" style="margin-left:18px">下一章：功能详解 →</a>
+    <div class="footer">NeoCosmos 6.3.0 · 离线帮助中心</div>
+  </div>
+</body>
+</html>

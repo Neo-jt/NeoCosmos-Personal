@@ -1,0 +1,22 @@
+{
+  "name": "neolink",
+  "version": "10.18.9",
+  "private": true,
+  "type": "module",
+  "description": "NeoCosmos — 本地优先的知识网络桌面客户端（引擎 + CLI + stdio MCP Server）",
+  "bin": {
+    "neolink": "src/cli.js"
+  },
+  "scripts": {
+    "mcp": "node src/mcp/server.js",
+    "mcp:config": "node src/mcp/server.js --print-config openclaw",
+    "test": "node test/run-all.js",
+    "eval": "node offline-eval/run.js",
+    "demo": "node src/demo.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "AGPL-3.0",
+  "dependencies": {}
+}

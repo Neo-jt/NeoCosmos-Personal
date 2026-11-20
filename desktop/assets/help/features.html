@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>功能详解 · NeoCosmos 离线帮助</title>
+  <link rel="stylesheet" href="help.css">
+</head>
+<body>
+  <header>
+    <h1>② 功能详解</h1>
+    <div class="sub">节点图谱 · 知识星云 3D · 离线字体 · 导入导出</div>
+    <nav class="top">
+      <a href="index.html">首页</a>
+      <a href="getting-started.html">新手引导</a>
+      <a href="features.html">功能详解</a>
+      <a href="shortcuts.html">快捷键</a>
+      <a href="faq.html">常见问题</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <figure class="figure">
+      <img class="hero" src="media/help-graph-view.png" alt="图谱连线视图示意">
+      <figcaption>图谱连线视图：以关系为主角，把所有节点的连接结构铺展开来。</figcaption>
+    </figure>
+
+    <h2>1. 节点图谱（Graph View）</h2>
+    <p>默认的二维画布视图。每张卡片是一个可拖拽的节点，关系是有向连线。支持：</p>
+    <ul>
+      <li><b>力导向布局</b>：节点会按关系密度自动聚拢，相关越紧密越靠近。</li>
+      <li><b>按类型着色</b>：人物、组织、概念、事件、文件各有独立色板，一眼分辨。</li>
+      <li><b>聚焦模式</b>：选中某节点后，仅高亮其直接邻居，隐藏其余，便于深入阅读局部子网。</li>
+      <li><b>筛选</b>：按类型、标签、建立时间过滤当前可见节点。</li>
+    </ul>
+
+    <h2>2. 知识星云 3D 视图（Cosmos View）</h2>
+    <p>切换到一个可自由飞行的三维星空。节点化作发光星体，关系是星间的流光。本视图依赖随包分发的<b>星图视觉资源包</b>（星云背景、法线贴图、光晕精灵、类型图标），全部离线内置，无需下载。</p>
+    <table>
+      <thead><tr><th>资源</th><th>用途</th><th>离线状态</th></tr></thead>
+      <tbody>
+        <tr><td>星云背景 4096²</td><td>3D 场景的深空氛围底图</td><td>内置</td></tr>
+        <tr><td>细节法线贴图 4096²</td><td>星体表面的凹凸光照（PBR）</td><td>内置</td></tr>
+        <tr><td>节点光晕精灵</td><td>星体发光晕圈</td><td>内置</td></tr>
+        <tr><td>节点类型图标</td><td>不同突触类型的辨识图标</td><td>内置</td></tr>
+      </tbody>
+    </table>
+    <div class="note">这些资源是本应用的<b>视觉资产</b>，与你的知识内容无关；即使删除它们，你的数据也不受影响，只是 3D 视图的观感会变朴素。</div>
+
+    <h2>3. 离线字体族</h2>
+    <p>为保证导出的文档、卡片标题与代码块在任何机器上都呈现一致的中文与手写风格，安装包内置了一套 <b>OFL 开源授权</b>的字体族，全部随包离线分发：</p>
+    <ul>
+      <li><b>Noto Sans SC / Noto Serif SC</b>（可变字体）：正文与标题的中英混排基准字体。</li>
+      <li><b>六款中文展示 / 手写体</b>（马善政楷书、站酷快乐体、站酷庆科黄油体、柳建毛草、龙藏、志莽行书）：用于卡片标题、批注与强调，营造「手写笔记」质感。</li>
+    </ul>
+    <div class="note warn"><b>授权说明：</b>上述字体均采用 SIL 开放字体许可（OFL），可自由分发与嵌入。本应用仅以「显示用途」调用，未修改字库本体。</div>
+
+    <h2>4. 导入与导出</h2>
+    <table>
+      <thead><tr><th>操作</th><th>格式</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>导入</td><td>Markdown / JSON / CSV</td><td>将既有笔记批量转为节点；表头映射为字段，行内链接转为关系。</td></tr>
+        <tr><td>导出</td><td>Markdown / JSON</td><td>把当前子网或全库导出为纯文本，便于迁移或留档。</td></tr>
+        <tr><td>快照</td><td>目录副本</td><td>对整个 <code>NeoCosmosVault</code> 做时间点复制，等同离线备份。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. 本地优先与隐私</h2>
+    <p>本应用<b>没有云端、没有账号、没有遥测</b>。所有索引、缓存与渲染都在本机完成。你可在系统层面彻底禁止其网络访问，功能不受影响。</p>
+
+    <a class="back" href="getting-started.html">← 上一章：新手引导</a>
+    <a class="back" href="shortcuts.html" style="margin-left:18px">下一章：快捷键 →</a>
+    <div class="footer">NeoCosmos 6.3.0 · 离线帮助中心</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>常见问题 · NeoCosmos 离线帮助</title>
+  <link rel="stylesheet" href="help.css">
+</head>
+<body>
+  <header>
+    <h1>④ 常见问题</h1>
+    <div class="sub">数据、备份、网络、故障排查</div>
+    <nav class="top">
+      <a href="index.html">首页</a>
+      <a href="getting-started.html">新手引导</a>
+      <a href="features.html">功能详解</a>
+      <a href="shortcuts.html">快捷键</a>
+      <a href="faq.html">常见问题</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <h2>数据存在哪里？</h2>
+    <p>全部位于你本机的 <code>NeoCosmosVault</code> 文件夹（默认在用户文档目录下）。它包含节点、关系、索引与缓存，均为本地普通文件，不依赖任何数据库服务。</p>
+
+    <h2>如何备份？</h2>
+    <p>两种方式任选：</p>
+    <ul>
+      <li><b>手动副本</b>：直接把 <code>NeoCosmosVault</code> 整个文件夹复制到移动硬盘 / 离线介质。</li>
+      <li><b>应用内快照</b>：按 <kbd>Ctrl</kbd>+<kbd>S</kbd> 生成时间点副本，存放在仓库内的 <code>snapshots/</code> 子目录。</li>
+    </ul>
+    <div class="note warn"><b>重要：</b>本应用<b>不提供云端同步</b>。若需在多台机器间迁移，请用上述离线副本方式，切勿期待「自动上云」。</div>
+
+    <h2>它会联网吗？会收集我的数据吗？</h2>
+    <p>不会。NeoCosmos 默认不发起任何网络请求、不嵌入遥测、不索取账号。你可在操作系统防火墙中彻底禁止其联网，功能完全不受影响。你正在阅读的帮助中心也是纯离线页面。</p>
+
+    <h2>内置字体与星图资源会占用我的数据空间吗？</h2>
+    <p>不会。字体族与星图视觉资源属于<b>应用资产</b>，与你的知识内容（<code>NeoCosmosVault</code>）物理隔离。即使删除这些资产，你的数据也不受影响，仅 3D 视图观感会变朴素。</p>
+
+    <h2>换电脑后还能用吗？</h2>
+    <p>可以。在目标机器安装同版本 NeoCosmos，然后把旧机器的 <code>NeoCosmosVault</code> 复制到新机器的对应位置即可。由于渲染引擎与数据是分离的，迁移无需任何「导入向导」。</p>
+
+    <h2>界面卡顿怎么办？</h2>
+    <p>当节点数量极大时，建议：</p>
+    <ol class="steps">
+      <li>按 <kbd>F</kbd> 进入聚焦模式，只渲染当前子网。</li>
+      <li>用筛选器按类型 / 标签隐藏无关节点。</li>
+      <li>切换为二维图谱视图（比 3D 更轻量）。</li>
+    </ol>
+
+    <h2>误删了节点能恢复吗？</h2>
+    <p>删除会先进入本地「回收暂存」。<b>卸载或清空仓库前</b>，请确认已导出重要数据。由于无云端，我们无法为你远程恢复，请务必定期快照。</p>
+
+    <div class="note ok"><b>一句话总结：</b>你的数据只属于你的电脑。掌控备份，就掌控了一切。</div>
+
+    <a class="back" href="shortcuts.html">← 上一章：快捷键</a>
+    <a class="back" href="index.html" style="margin-left:18px">返回帮助首页 →</a>
+    <div class="footer">NeoCosmos 6.3.0 · 离线帮助中心 · 全文离线，未发起任何网络请求</div>
+  </div>
+</body>
+</html>

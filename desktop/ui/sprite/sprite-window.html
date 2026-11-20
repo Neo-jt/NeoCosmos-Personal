@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: neolink:; connect-src 'none'; worker-src 'self'; child-src 'none'" />
+<title>桌面伴侣 · NeoCosmos</title>
+<link rel="stylesheet" href="./sprite.css" />
+</head>
+<body>
+  <div class="sprite-root" id="root">
+    <div class="sprite-stage" id="stage"></div>
+
+    <button class="sprite-hide" id="hideBtn" data-hit title="收起" aria-label="收起">×</button>
+    <button class="sprite-size-btn" id="sizeBtn" data-hit title="调节精灵大小" aria-label="调节精灵大小">⤢</button>
+
+    <!-- v6.5.0：尺寸调节（真改悬浮窗尺寸，比例持久化到 userData） -->
+    <div class="sprite-size-pop" id="sizePop" hidden data-hit>
+      <div class="ssp-head"><span>精灵尺寸</span><b id="sizeVal">90%</b></div>
+      <input type="range" id="sizeRange" min="60" max="150" step="5" value="90" aria-label="精灵尺寸" />
+      <div class="ssp-foot"><span>小</span><span>大</span></div>
+    </div>
+
+    <!-- v6.20：初始一律为加载态，真实值由主进程状态推送覆盖；不留写死读数 -->
+    <div class="astra-hud" id="astraHud" data-hit>
+      <div class="ah-top">
+        <span class="ah-sigil" id="ahSigil">—</span>
+        <span class="ah-key" id="ahKey">读取中…</span>
+        <span class="ah-mood" id="ahMood">—</span>
+        <span class="ah-gen" id="ahGen" title="当前世代">—</span>
+      </div>
+      <div class="ah-intent" id="ahIntent">等待内核状态…</div>
+      <div class="ah-lib" id="ahLib" title="思维沉淀库位置"></div>
+      <div class="ah-drives" id="ahDrives"></div>
+    </div>
+
+    <div class="sprite-think" id="thinkBubble" hidden>
+      <span class="sprite-think-dot"></span>
+      <span id="thinkText">正在计算…</span>
+    </div>
+
+    <!-- v6.11：漫游坞 —— 自主 / 跟随 / 停留 / 回身边 / 抓取 -->
+    <div class="astra-dock" id="astraDock" data-hit>
+      <button class="ad-btn is-on" data-mode="auto" title="自主漫游" aria-label="自主漫游">◇</button>
+      <button class="ad-btn" data-mode="follow" title="跟随光标" aria-label="跟随光标">◎</button>
+      <button class="ad-btn" data-mode="perch" title="停留此处" aria-label="停留此处">▣</button>
+      <button class="ad-btn" id="adHome" title="回到身边" aria-label="回到身边">⌂</button>
+      <span class="ad-sep"></span>
+      <button class="ad-btn ad-grip" id="adGrip" title="按住拖动" aria-label="拖动">✥</button>
+    </div>
+
+    <div class="sprite-panel" id="panel" hidden data-hit>
+      <div class="sprite-panel-head">
+        <span class="sph-avatar" aria-hidden="true">✶</span>
+        <span class="sph-title">桌面伴侣</span>
+        <span class="sph-status" id="spriteStatus" title="内核状态未确认">○</span>
+        <button id="panelClose" title="收起对话">－</button>
+      </div>
+      <div class="sprite-tabs" id="spriteTabs" role="tablist">
+        <button class="st-tab is-on" data-tab="chat" role="tab" aria-selected="true">对话</button>
+        <button class="st-tab" data-tab="mind" role="tab" aria-selected="false">状态流</button>
+      </div>
+      <div class="sprite-msgs" id="msgs">
+        <div class="sprite-typing" id="typing" hidden>
+          <span class="spt-dot"></span><span class="spt-dot"></span><span class="spt-dot"></span>
+          <i class="spt-text">正在整理答案…</i>
+        </div>
+      </div>
+      <div class="sprite-mind" id="mindView" hidden></div>
+      <div class="sprite-input-row" id="inputRow">
+        <input id="askInput" type="text" autocomplete="off" placeholder="与星灵对话…" aria-label="向精灵提问" />
+        <button id="sendBtn" title="发送">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 11.5 20 4.2l-3.3 15.2-4.7-5.4-5.1 3.9z"/></svg>
+        </button>
+      </div>
+      <div class="sprite-hint" id="spriteHint" title="本机 CPU 经典模拟，非真实量子计算；行为层为确定性本地架构（无模型 / 无网络），成长阶段为可解释的产品叙事">本机 CPU 经典模拟 · 非真实量子计算 · 无模型 / 无网络</div>
+    </div>
+  </div>
+  <script type="module" src="./sprite-window.js"></script>
+</body>
+</html>

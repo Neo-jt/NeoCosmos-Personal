@@ -1,0 +1,882 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   NORTHSTAR · v10.18.9 · "Engineering Grade / 工程级克制 + FLIGHT DECK + LAYOUT INTEGRITY + SYSTEM INTEGRITY"
+   ───────────────────────────────────────────────────────────────────────────
+   第三代设计层。不是给上一代加装饰，而是把上一代「AI 生成式界面」的
+   几处通病系统地减掉：
+
+     ① 同构卡片堆砌   → 共享容器 + 1px 发丝线，靠对齐而非边框划分区块
+     ② 装饰性渐变/发光/毛玻璃 → 全部移除；阴影只留给真正浮起的弹层
+     ③ 中英混排小标签 / 全大写 eyebrow / REAL IPC 徽章 → 删除，中文界面只说中文
+     ④ 调试信息冒充产品读数（通道数 / API 数 / 编排 hash / E33）→ 收进「关于」
+     ⑤ 非标准字重（560 / 650 / 680）与 14px 大圆角 → 收敛到 400/500/600/700 与 6px
+     ⑥ 每个按钮都长一个样、每个卡片都有空输出框 → 按用途分级，结果区按需出现
+
+   参照的是三家共同的方法论，而不是任何一家的皮肤：
+     · Microsoft Fluent  —— 8px 网格、发丝线、可预测的焦点环、信息密度优先
+     · Apple HIG         —— 系统字体、克制的层级落差、内容优先于容器
+     · SpaceX            —— 近乎无色的工业表面、单一信号色、数据用等宽对齐
+
+   ── 架构纪律 ────────────────────────────────────────────────────────────
+   ① 本文件是**叠加层**，加载在 aurora-pro.css 之后，不改任何历史规则；
+      所有规则挂 body.ns-layout，移除该 class 即完整回退到 6.15 观感；
+   ② 结构性修复（三段式标题栏 / .ent-shell 撑满舞台）保留在 pro 层，
+      本层只重定义视觉，不推翻已修好的几何；
+   ③ 颜色只经 --ds-* / --pro-* 变量，深色、强调色、高对比度全部继承；
+   ④ 不引入字体、不联网、不加载图片；质感全部来自排版、留白与发丝线；
+   ⑤ 尊重 prefers-reduced-motion 与外观面板的动效开关；
+   ⑥ 本层不新增任何功能、不改动任何数据流 —— 设计归设计，功能归内核。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ 0 · 令牌：中性优先，唯一强调色，零装饰阴影 ═══════════════════════════ */
+body.ns-layout{
+  /* 强调色：专业深蓝，不是 AI 紫。只用于选中态 / 主操作 / 焦点环 */
+  --ds-ah:221; --ds-as:83%; --ds-al:47%; --ds-al-dark:70%;
+  --ds-accent:#1556d8;
+  --ds-accent-hover:#1048bb;
+  --ds-accent-pressed:#0d3c9e;
+  --ds-accent-soft:rgba(21,86,216,.075);
+  --ds-accent-softer:rgba(21,86,216,.04);
+  --ds-on-accent:#fff;
+  --ds-ring:0 0 0 2px var(--ds-surface), 0 0 0 4px rgba(21,86,216,.38);
+
+  /* 表面：纯中性，去掉冷调偏色；层次只靠 1px 线与极轻底色 */
+  --ds-canvas:#f6f7f8;
+  --ds-surface:#fff;
+  --ds-surface-2:#fafbfc;
+  --ds-surface-3:#f1f3f5;
+  --ds-surface-4:#e9ecef;
+  --ds-ink:#14181f;
+  --ds-ink-2:#454d59;
+  --ds-ink-3:#6b7482;
+  --ds-ink-4:#98a0ac;
+  --ds-line:#e3e6ea;
+  --ds-line-2:#ccd1d8;
+  --ds-line-3:#adb5c0;
+
+  --ds-e1:0 1px 2px rgba(16,24,40,.03);
+  --ds-e2:0 2px 6px rgba(16,24,40,.05);
+  --ds-e3:0 12px 28px rgba(16,24,40,.12), 0 2px 8px rgba(16,24,40,.06);
+  --ds-e4:0 24px 60px rgba(16,24,40,.18), 0 4px 16px rgba(16,24,40,.08);
+
+  /* 圆角：工业级克制。大圆角是消费级 AI 模板最明显的指纹 */
+  --ds-r-s:5px; --ds-r-m:7px; --ds-r-l:9px; --ds-r-xl:12px;
+
+  /* 8px 网格与统一字阶 */
+  --pro-title-h:48px;
+  --pro-status-h:28px;
+  --pro-rail-w:188px;
+  --pro-rail-w-mini:56px;
+  --pro-gutter:24px;
+  --pro-measure:72ch;
+  --pro-ease:cubic-bezier(.2,0,0,1);
+
+  /* 兼容层变量同步，避免旧视图半新半旧 */
+  --bg:var(--ds-canvas);
+  --text:var(--ds-ink); --muted:var(--ds-ink-2); --dim:var(--ds-ink-3);
+  --line:var(--ds-line); --line2:var(--ds-line-2);
+  --accent:var(--ds-accent); --accent-strong:var(--ds-accent-hover);
+  --accent-soft:var(--ds-accent-soft);
+  --violet:var(--ds-accent); --magenta:var(--ds-accent); --blue:var(--ds-accent);
+  --radius:var(--ds-r-m); --radius-s:var(--ds-r-s);
+  --shadow:var(--ds-e3); --shadow-sm:var(--ds-e1); --focus:var(--ds-ring);
+
+  font-family:"Segoe UI Variable Text","Segoe UI","Noto Sans SC","Microsoft YaHei UI","PingFang SC",-apple-system,BlinkMacSystemFont,sans-serif;
+  font-feature-settings:"tnum" 1,"cv02" 1;
+  -webkit-font-smoothing:antialiased;
+}
+
+body.ns-layout.theme-dark{
+  --ds-accent:#6f9bff;
+  --ds-accent-hover:#89acff;
+  --ds-accent-pressed:#a7c0ff;
+  --ds-accent-soft:rgba(111,155,255,.12);
+  --ds-accent-softer:rgba(111,155,255,.07);
+  --ds-on-accent:#0b0e13;
+  --ds-ring:0 0 0 2px var(--ds-surface), 0 0 0 4px rgba(111,155,255,.42);
+  --ds-canvas:#0d1014;
+  --ds-surface:#14181e;
+  --ds-surface-2:#11151a;
+  --ds-surface-3:#1c2129;
+  --ds-surface-4:#252b34;
+  --ds-ink:#eef1f5;
+  --ds-ink-2:#b4bdc9;
+  --ds-ink-3:#8893a2;
+  --ds-ink-4:#69727f;
+  --ds-line:#262c35;
+  --ds-line-2:#39414c;
+  --ds-line-3:#525b68;
+}
+
+/* 全站：数字对齐；装饰性渐变一律不下发到常规容器 */
+body.ns-layout .sb-item,
+body.ns-layout .rail-metric b,
+body.ns-layout .k-value,
+body.ns-layout .hub-stat b,
+body.ns-layout .pro-matrix-row,
+body.ns-layout #sbLatency{font-variant-numeric:tabular-nums}
+
+/* ═══ 1 · 标题栏：48px 工业条，控件分组收敛 ═════════════════════════════════ */
+body.ns-layout .titlebar{
+  background:var(--ds-surface);
+  border-bottom:1px solid var(--ds-line);
+}
+body.ns-layout .titlebar::before{display:none} /* 移除极光发丝线 */
+body.ns-layout .brand{flex:0 0 174px;gap:9px}
+body.ns-layout .brand-mark{width:26px;height:26px;border-radius:6px;background:transparent}
+body.ns-layout .brand-text b{font-size:13px;font-weight:700;letter-spacing:-.01em}
+body.ns-layout .brand-text i{font-size:10px;font-weight:500;color:var(--ds-ink-3);font-style:normal;letter-spacing:0}
+
+body.ns-layout .cmdbar{
+  height:32px;border-radius:6px;border:1px solid var(--ds-line-2);
+  background:var(--ds-surface-2);box-shadow:none;
+}
+body.ns-layout .cmdbar:focus-within{
+  border-color:var(--ds-accent);box-shadow:0 0 0 3px var(--ds-accent-soft);background:var(--ds-surface);
+}
+body.ns-layout .cmdbar input{font-size:12px;font-weight:400}
+body.ns-layout .cmdbar kbd{
+  font:500 10px/1 var(--ds-mono);color:var(--ds-ink-3);
+  border:1px solid var(--ds-line);background:transparent;border-radius:4px;
+}
+
+/* 工具按钮：统一 28px、无底色、hover 才给浅灰，不再一排抢眼的圆角块 */
+body.ns-layout .tb-actions{gap:2px}
+body.ns-layout .tb-actions .wb{
+  width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;
+}
+body.ns-layout .tb-actions .wb:hover{background:var(--ds-surface-3);border-color:transparent}
+body.ns-layout .tb-actions .wb svg{width:15px;height:15px}
+body.ns-layout .edition-seg{
+  margin-right:8px;padding:2px;border-radius:6px;
+  background:var(--ds-surface-3);border:1px solid var(--ds-line);
+}
+body.ns-layout .edition-seg button{
+  font-size:11px;font-weight:500;padding:4px 10px;border-radius:4px;
+}
+body.ns-layout .chip-vault{
+  height:28px;border-radius:6px;border:1px solid var(--ds-line-2);
+  background:var(--ds-surface);box-shadow:none;font-size:11.5px;font-weight:500;
+}
+body.ns-layout .chip-vault .dot{width:6px;height:6px}
+body.ns-layout .win-btns .wb{width:40px;height:var(--pro-title-h)}
+body.ns-layout .win-btns .wb:hover{background:var(--ds-surface-3)}
+
+/* ═══ 2 · 导航：单行项目，去掉每个菜单下面的说明小字 ═══════════════════════ */
+body.ns-layout .rail{background:var(--ds-surface-2);border-right:1px solid var(--ds-line)}
+body.ns-layout .rail-group{
+  font-size:10px;font-weight:600;letter-spacing:.06em;
+  color:var(--ds-ink-4);text-transform:none;padding:16px 14px 6px;
+}
+body.ns-layout .rail-item{
+  min-height:34px;margin:1px 6px;padding:0 10px;border-radius:5px;
+  font-size:12.5px;font-weight:500;
+}
+body.ns-layout .rail-item .ico{width:17px;height:17px;flex:0 0 17px;stroke-width:1.6}
+body.ns-layout .rail-item .rail-txt span{font-size:12.5px;font-weight:500;letter-spacing:0}
+body.ns-layout .rail-item small{display:none} /* 说明移到原生 title，不再占一行 */
+body.ns-layout .rail-item:hover{background:var(--ds-surface-3);transform:none}
+body.ns-layout .rail-item.is-active{
+  background:var(--ds-accent-soft);color:var(--ds-accent);font-weight:600;
+}
+body.ns-layout .rail-item.is-active::before{
+  width:2px;height:18px;left:-6px;border-radius:0;background:var(--ds-accent);
+}
+body.ns-layout .rail-foot{border-top:1px solid var(--ds-line);padding:8px 12px;gap:0}
+body.ns-layout .rail-metric{padding:2px 0}
+body.ns-layout .rail-metric b{font-size:12px;font-weight:600}
+body.ns-layout .rail-metric span{font-size:10px;color:var(--ds-ink-3)}
+body.ns-layout .rail-toggle{border-top:1px solid var(--ds-line);font-size:11px;color:var(--ds-ink-3)}
+body.ns-layout.pro-rail-collapsed .rail{width:var(--pro-rail-w-mini);flex-basis:var(--pro-rail-w-mini)}
+
+/* ═══ 3 · 舞台：统一左基线、可读行长、去掉入场动画 ═════════════════════════ */
+body.ns-layout .deck-view.is-active{animation:none}
+body.ns-layout .page{padding:24px var(--pro-gutter) 48px}
+body.ns-layout .page-head{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--ds-line)}
+body.ns-layout .page-head h2{font-size:22px;font-weight:600;letter-spacing:-.02em}
+body.ns-layout .page-head p{font-size:12.5px;line-height:1.65;color:var(--ds-ink-3);margin-top:6px}
+body.ns-layout .card{
+  padding:16px;border-radius:7px;border:1px solid var(--ds-line);
+  background:var(--ds-surface);box-shadow:none;transition:border-color 120ms var(--pro-ease);
+}
+body.ns-layout .card:hover{border-color:var(--ds-line-2);box-shadow:none;transform:none}
+body.ns-layout .card h3{font-size:13px;font-weight:600;letter-spacing:0;margin-bottom:12px}
+body.ns-layout .kv{font-size:12px;padding:6px 0;border-bottom:1px solid var(--ds-line)}
+body.ns-layout .doc-body{max-width:var(--pro-measure);font-size:14px;line-height:1.8}
+body.ns-layout .doc-scroll{padding:28px 40px 80px}
+body.ns-layout .pane{background:var(--ds-surface)}
+body.ns-layout .pane-left,body.ns-layout .pane-right{background:var(--ds-surface-2)}
+
+/* 按钮：两级，不靠颜色堆叠；圆角与输入框统一 */
+body.ns-layout .btn{
+  border-radius:5px;font-size:12px;font-weight:600;padding:6px 12px;
+  border:1px solid var(--ds-line-2);background:var(--ds-surface);color:var(--ds-ink-2);
+  box-shadow:none;transition:background 120ms var(--pro-ease),border-color 120ms var(--pro-ease);
+}
+body.ns-layout .btn:hover{background:var(--ds-surface-3);border-color:var(--ds-line-3)}
+body.ns-layout .btn:active{transform:none}
+body.ns-layout .btn:focus-visible{outline:none;box-shadow:var(--ds-ring)}
+body.ns-layout .btn.is-primary,
+body.ns-layout .pro-actions .btn.is-primary{
+  background:var(--ds-accent);border-color:var(--ds-accent);color:var(--ds-on-accent);
+}
+body.ns-layout .btn.is-primary:hover,
+body.ns-layout .pro-actions .btn.is-primary:hover{background:var(--ds-accent-hover);border-color:var(--ds-accent-hover)}
+body.ns-layout .btn.ghost{border-color:transparent;background:transparent;color:var(--ds-ink-3)}
+
+/* ═══ 4 · 状态栏：用户状态，不是工程仪表盘 ═════════════════════════════════ */
+body.ns-layout .statusbar{
+  background:var(--ds-surface);border-top:1px solid var(--ds-line);
+  padding:0 14px;gap:10px;font-size:11px;color:var(--ds-ink-3);
+}
+body.ns-layout #sbPath{font-family:var(--ds-mono);font-size:10.5px;color:var(--ds-ink-3)}
+body.ns-layout .sb-badge{
+  font-family:inherit;font-size:10px;font-weight:600;letter-spacing:0;
+  border:1px solid var(--ds-line-2);background:var(--ds-surface-2);color:var(--ds-ink-3);
+  border-radius:4px;
+}
+body.ns-layout #sbCaps{color:var(--ds-ink-4);font-size:10.5px}
+
+/* ═══ 5 · 能力中枢：从「8 张同构 KPI」改成「一行事实 + 分区清单」 ══════════ */
+body.ns-layout .pro-hub{padding:28px var(--pro-gutter) 56px}
+body.ns-layout .pro-hub-head{
+  padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--ds-line);
+  align-items:flex-end;
+}
+body.ns-layout .pro-hub-kicker{display:none} /* 全大写英文 eyebrow：删除 */
+body.ns-layout .pro-hub h2{font-size:26px;font-weight:600;letter-spacing:-.025em;margin:0;line-height:1.2}
+body.ns-layout .pro-hub .pro-lede{
+  font-size:12.5px;line-height:1.65;color:var(--ds-ink-3);margin:8px 0 0;max-width:80ch;
+}
+body.ns-layout .pro-hub-meta{gap:4px}
+body.ns-layout .pro-stamp{font:400 10px/1.5 var(--ds-mono);color:var(--ds-ink-4)}
+body.ns-layout .pro-stamp b{font-weight:600;color:var(--ds-ink-3)}
+
+/* 事实条：数值与标签横排，靠竖线分隔，不再每张都套一个圆角白卡 */
+body.ns-layout .pro-kpis{
+  display:flex;flex-wrap:wrap;align-items:stretch;gap:0;
+  margin:0 0 24px;padding:0;
+  border:1px solid var(--ds-line);border-radius:7px;background:var(--ds-surface);
+  overflow:hidden;
+}
+body.ns-layout .pro-kpi{
+  flex:1 1 150px;min-width:140px;
+  display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline;
+  padding:11px 14px;border:0;border-right:1px solid var(--ds-line);border-radius:0;
+  background:transparent;box-shadow:none;
+}
+body.ns-layout .pro-kpi:last-child{border-right:0}
+/* 通道数 / API 数 / 中枢直达数 / Electron 版本属于实现细节，不是产品读数。
+   它们仍在 DOM 与 tooltip / 能力矩阵中可核对，但不占首屏位置。 */
+body.ns-layout .pro-kpi[data-kpi="channels"],
+body.ns-layout .pro-kpi[data-kpi="apis"],
+body.ns-layout .pro-kpi[data-kpi="hub"],
+body.ns-layout .pro-kpi[data-kpi="runtime"]{display:none}
+body.ns-layout .pro-kpi[data-kpi="service"]{border-right:0}
+body.ns-layout .pro-kpi .k-label{
+  grid-column:1;grid-row:1;
+  font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ds-ink-3);
+}
+body.ns-layout .pro-kpi .k-value{
+  grid-column:2;grid-row:1;text-align:right;
+  font:600 18px/1.2 var(--ds-font);letter-spacing:-.01em;margin:0;
+  color:var(--ds-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+body.ns-layout .pro-kpi .k-value.is-accent{color:var(--ds-accent)}
+body.ns-layout .pro-kpi.is-pending .k-value{font-size:12px;font-weight:500;color:var(--ds-ink-4)}
+body.ns-layout .pro-kpi .k-sub{
+  grid-column:1/-1;grid-row:2;font-size:10px;line-height:1.4;min-height:0;
+  color:var(--ds-ink-4);display:block;-webkit-line-clamp:1;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis;
+}
+
+/* 分区：序号退到背景，中文标题为主，英文小标签删除 */
+body.ns-layout .pro-section{margin:0 0 26px}
+body.ns-layout .pro-section-head{
+  gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--ds-line);
+}
+body.ns-layout .pro-section-head .s-index{font:500 10px/1 var(--ds-mono);color:var(--ds-ink-4);letter-spacing:0}
+body.ns-layout .pro-section-head h3{font-size:14px;font-weight:600;letter-spacing:0}
+body.ns-layout .pro-section-head .s-en{display:none}
+body.ns-layout .pro-section-head .s-desc{font-size:11px;color:var(--ds-ink-4)}
+body.ns-layout .pro-grid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+
+/* 操作卡：去阴影、去内部通道徽章、收紧留白 */
+body.ns-layout .pro-card{
+  border:1px solid var(--ds-line);border-radius:7px;background:var(--ds-surface);
+  box-shadow:none;padding:16px;transition:border-color 120ms var(--pro-ease);
+}
+body.ns-layout .pro-card:hover{border-color:var(--ds-line-2);box-shadow:none}
+body.ns-layout .pro-card-head{margin-bottom:8px}
+body.ns-layout .pro-card-head h4{font-size:13px;font-weight:600;letter-spacing:0}
+body.ns-layout .pro-card-head .c-tag{display:none} /* 内部 channel id 不是产品信息 */
+body.ns-layout .pro-card p.pro-note{font-size:11.5px;line-height:1.65;color:var(--ds-ink-3);margin:0 0 12px}
+body.ns-layout .pro-card p.pro-warn{
+  font-size:11px;line-height:1.6;color:var(--ds-ink-2);background:var(--ds-surface-3);
+  border-left:2px solid var(--ds-warn);border-radius:0 4px 4px 0;padding:7px 10px;margin:0 0 12px;
+}
+body.ns-layout .pro-fields{gap:8px;margin-bottom:10px}
+body.ns-layout .pro-field > span{
+  font-size:10.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ds-ink-3);
+}
+body.ns-layout .pro-field input,
+body.ns-layout .pro-field select,
+body.ns-layout .pro-field textarea,
+body.ns-layout .pro-matrix-tools input{
+  font:400 12px/1.5 var(--ds-font);background:var(--ds-surface);
+  border:1px solid var(--ds-line-2);border-radius:5px;padding:6px 9px;
+  box-shadow:none;
+}
+body.ns-layout .pro-field input:focus,
+body.ns-layout .pro-field select:focus,
+body.ns-layout .pro-field textarea:focus{
+  border-color:var(--ds-accent);box-shadow:0 0 0 3px var(--ds-accent-soft);
+}
+body.ns-layout .pro-actions{gap:6px}
+body.ns-layout .pro-actions .btn{font-size:11.5px;padding:5px 11px}
+
+/* 结果区：未执行时整块隐藏（JS 也同步置 hidden），不再有空模板占位 */
+body.ns-layout .pro-out{
+  margin-top:12px;border-top:1px solid var(--ds-line);padding-top:10px;
+}
+body.ns-layout .pro-out[hidden]{display:none}
+body.ns-layout .pro-out-head .o-state{
+  font:600 10px/1 var(--ds-mono);letter-spacing:0;border-radius:4px;
+}
+body.ns-layout .pro-out pre{
+  font:400 10.5px/1.6 var(--ds-mono);background:var(--ds-surface-2);
+  border:1px solid var(--ds-line);border-radius:5px;padding:9px 11px;
+}
+body.ns-layout .pro-chip{
+  font:400 10.5px/1.4 var(--ds-mono);border:1px solid var(--ds-line);
+  background:var(--ds-surface-2);border-radius:4px;
+}
+body.ns-layout .pro-chip b{color:var(--ds-accent);font-weight:600}
+
+/* 能力矩阵：表头与数据行同左基线，去掉圆角外框的「卡片感」 */
+body.ns-layout .pro-matrix{border:1px solid var(--ds-line);border-radius:6px;box-shadow:none}
+body.ns-layout .pro-matrix-row{
+  grid-template-columns:160px minmax(180px,1fr) 96px minmax(140px,1fr);
+  padding:7px 12px;font-size:11px;
+}
+body.ns-layout .pro-matrix-row.m-head{
+  font:600 10px/1.3 var(--ds-font);letter-spacing:0;text-transform:none;
+  background:var(--ds-surface-3);color:var(--ds-ink-3);
+}
+body.ns-layout .m-state{font:600 9.5px/1 var(--ds-font);letter-spacing:0;border-radius:4px}
+
+/* 诚实边界：低调的事实说明，不做成强调块 */
+body.ns-layout .pro-boundary{
+  margin-top:28px;padding:14px 16px;border:1px solid var(--ds-line);
+  border-radius:6px;background:var(--ds-surface-2);
+}
+body.ns-layout .pro-boundary h4{font-size:12px;font-weight:600}
+body.ns-layout .pro-boundary p{font-size:11.5px;line-height:1.7}
+body.ns-layout .pro-nav-grid{gap:8px}
+body.ns-layout .pro-nav-btn{
+  padding:11px 12px;border:1px solid var(--ds-line);border-radius:6px;
+  background:var(--ds-surface);transition:border-color 120ms var(--pro-ease),background 120ms var(--pro-ease);
+}
+body.ns-layout .pro-nav-btn:hover{border-color:var(--ds-accent);background:var(--ds-accent-soft);transform:none}
+body.ns-layout .pro-nav-btn b{font-size:12px;font-weight:600}
+body.ns-layout .pro-nav-btn em{font:500 9px/1 var(--ds-mono);letter-spacing:0;color:var(--ds-ink-4)}
+
+/* ═══ 6 · 企业管理 / 团队等 hub 视图：同样去卡片化 ═════════════════════════ */
+body.ns-layout .hub-stats{gap:0;margin-bottom:20px;border:1px solid var(--ds-line);border-radius:7px;overflow:hidden}
+body.ns-layout .hub-stat{
+  padding:12px 14px;border:1px solid var(--ds-line);border-radius:0;
+  box-shadow:none;background:var(--ds-surface);gap:8px;
+}
+body.ns-layout .hub-stat b{font-size:20px;font-weight:600;letter-spacing:-.02em}
+body.ns-layout .hub-stat span{font-size:11px;letter-spacing:0;color:var(--ds-ink-3)}
+body.ns-layout .hub-grid{gap:12px}
+body.ns-layout .hub-grid .card{padding:16px}
+body.ns-layout .hub-grid .card h3{
+  font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ds-ink-3);margin-bottom:12px;
+}
+body.ns-layout .hub-link{border-radius:6px;border:1px solid var(--ds-line);box-shadow:none}
+body.ns-layout .ent-shell{background:var(--ds-canvas)}
+
+/* ═══ 7 · 浮层 / 弹层：只有真正离开文档流的地方才允许阴影与模糊 ════════════ */
+body.ns-layout .modal-card,
+body.ns-layout .menu,
+body.ns-layout .appearance-pop,
+body.ns-layout .sprite-pop,
+body.ns-layout .cmd-results{
+  border:1px solid var(--ds-line-2);border-radius:8px;
+  background:var(--ds-surface);box-shadow:var(--ds-e3);backdrop-filter:none;
+  background-image:none;
+}
+body.ns-layout .sprite-pop-tt{font-weight:600;letter-spacing:0}
+body.ns-layout .sprite-pop-desc,
+body.ns-layout .sprite-pop-note{font-size:11.5px;line-height:1.7;color:var(--ds-ink-3)}
+body.ns-layout .toast{
+  border:1px solid var(--ds-line-2);border-radius:6px;box-shadow:var(--ds-e3);
+  background:var(--ds-surface);font-size:12px;
+}
+
+/* 启动屏：去掉大字距字标与装饰光晕，只留必要进度信息 */
+body.ns-layout .boot{background:var(--ds-canvas)}
+body.ns-layout .boot-wordmark{
+  font-size:20px;font-weight:600;letter-spacing:.16em;color:var(--ds-ink);
+}
+body.ns-layout .boot-text{font-size:12px;color:var(--ds-ink-3);letter-spacing:0}
+body.ns-layout .boot-sub{font-size:10px;color:var(--ds-ink-4);letter-spacing:.04em}
+body.ns-layout .boot-canvas{opacity:.35}
+
+/* ═══ 8 · 深色 / 高对比 / 减少动效 / 窄窗口 ════════════════════════════════ */
+body.ns-layout.theme-dark .pro-kpi,
+body.ns-layout.theme-dark .hub-stat,
+body.ns-layout.theme-dark .pro-card,
+body.ns-layout.theme-dark .card{background:var(--ds-surface)}
+body.ns-layout.theme-dark .pro-kpi,
+body.ns-layout.theme-dark .pro-kpi:last-child{border-color:var(--ds-line)}
+body.ns-layout.theme-dark .edition-seg button.is-on{color:var(--ds-ink);background:var(--ds-surface)}
+body.ns-layout.theme-dark .chip-vault{background:var(--ds-surface)}
+
+@media (prefers-contrast:more){
+  body.ns-layout{
+    --ds-line:#9aa1ac; --ds-line-2:#6f7783; --ds-ink-3:#48505c; --ds-ink-4:#5a626e;
+  }
+  body.ns-layout .pro-card,
+  body.ns-layout .card{border-width:1px}
+}
+@media (prefers-reduced-motion:reduce){
+  body.ns-layout *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+@media (max-width:1100px){
+  body.ns-layout .pro-rail-w{width:56px}
+  body.ns-layout .pro-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  body.ns-layout .pro-kpi{flex-basis:50%}
+}
+
+/* ═══ 9 · v6.17 国际化精修：字体 · 字阶 · 动效语言 · 空状态 ══════════════
+   目标：把交付文档第 57 行自陈的四项差距补齐
+   （图标语义体系 / 跨视图动效语言 / 字号流式缩放 / Windows 中文排版字重受限）。
+   仅叠加新规则，不改动任何既有几何与数据流。 ═════════════════════════════ */
+
+/* 9.1 字体：CJK 强制走 Noto Sans SC（可变字重 100–900，根治系统字体字重受限）；
+   阅读正文用 Noto Serif SC 衬线；禁用合成粗体（font-synthesis:none），避免伪粗 */
+body.ns-layout{font-synthesis:none}
+body.ns-layout .doc-body{
+  font-family:"Noto Serif SC","Songti SC","SimSun",serif;
+}
+
+/* 9.2 字重归一：去掉 650 / 680 等非标值，统一 600 / 700（浏览器对非标值只是就近取整，
+   在 Noto 可变字体下更明显；收敛到标准值才是成品级排版） */
+body.ns-layout .page-head h2,
+body.ns-layout .pro-hub h2,
+body.ns-layout .pro-section-head h3,
+body.ns-layout .card h3,
+body.ns-layout .pro-card-head h4{font-weight:600}
+body.ns-layout .brand-text b{font-weight:700}
+
+/* 9.3 流式字阶：随视口在 14–30px 间平滑缩放（clamp）；大字号开关整体乘 1.12。
+   不依赖媒体查询断点，缩放连续无跳变——这是「字号流式缩放」的本来含义 */
+body.ns-layout{--ds-scale:1}
+body.ns-layout.scale-large{--ds-scale:1.12}
+body.ns-layout .page-head h2{font-size:clamp(18px,1.1vw + 13px,24px);letter-spacing:-.02em}
+body.ns-layout .pro-hub h2{font-size:clamp(22px,1.5vw + 15px,30px);letter-spacing:-.025em}
+body.ns-layout .pro-section-head h3{font-size:15px}
+body.ns-layout .card h3,
+body.ns-layout .pro-card-head h4{font-size:13px}
+body.ns-layout.scale-large .page-head h2{font-size:clamp(20px,1.2vw + 15px,27px)}
+body.ns-layout.scale-large .pro-hub h2{font-size:clamp(24px,1.7vw + 17px,34px)}
+
+/* 9.4 动效语言：单一缓动 + 三档时长，仅用 transition（零 @keyframes，延续 v6.16 纪律）。
+   位移 ≤8px、时长 ≤280ms、单一缓动，杜绝 AI 模板式夸张动效。
+   仅当 body 未挂 .reduce-motion（外观动效开关开启 且 系统未要求减少动态）时生效。
+   视图切换刻意保持瞬时（同 VS Code / Figma 等工程级产品），动效集中于悬停 / 聚焦 / 展开收起，
+   用统一的时长与缓动让全产品「手感一致」——这才是可被称为「动效语言」的东西。 */
+body.ns-layout{
+  --ds-m-fast:130ms; --ds-m:200ms; --ds-m-slow:280ms;
+  --ds-m-ease:cubic-bezier(.2,0,0,1);
+}
+body.ns-layout:not(.reduce-motion) .rail-item,
+body.ns-layout:not(.reduce-motion) .btn,
+body.ns-layout:not(.reduce-motion) .tb-actions .wb,
+body.ns-layout:not(.reduce-motion) .chip-vault,
+body.ns-layout:not(.reduce-motion) .pro-card,
+body.ns-layout:not(.reduce-motion) .card,
+body.ns-layout:not(.reduce-motion) .hub-stat,
+body.ns-layout:not(.reduce-motion) .pro-nav-btn,
+body.ns-layout:not(.reduce-motion) .hub-link,
+body.ns-layout:not(.reduce-motion) .rail-toggle,
+body.ns-layout:not(.reduce-motion) .ap-section{
+  transition:background var(--ds-m-fast) var(--ds-m-ease),border-color var(--ds-m-fast) var(--ds-m-ease),color var(--ds-m-fast) var(--ds-m-ease),box-shadow var(--ds-m-fast) var(--ds-m-ease);
+}
+body.ns-layout:not(.reduce-motion) .pro-out,
+body.ns-layout:not(.reduce-motion) .pane,
+body.ns-layout:not(.reduce-motion) .page{
+  transition:border-color var(--ds-m) var(--ds-m-ease),background var(--ds-m) var(--ds-m-ease);
+}
+
+/* 9.5 真实空状态：图标 + 平实引导，无演示数据 / 无占位数字 */
+body.ns-layout .empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:48px 24px;text-align:center;color:var(--ds-ink-3);
+}
+body.ns-layout .empty .e-ico{width:40px;height:40px;color:var(--ds-ink-4);opacity:.7}
+body.ns-layout .empty .e-tt{font-size:14px;font-weight:600;color:var(--ds-ink-2);letter-spacing:0}
+/* v6.19.0：ch 以半角 "0" 计，46ch 对中文只有 ~23 字/行，末行常剩 1–2 字。
+   改用 em（跟随当前字号）+ balance，中文断行不再出现孤字。 */
+body.ns-layout .empty .e-hint{font-size:12px;line-height:1.65;max-width:min(100%,32em);
+  text-wrap:balance;line-break:strict;word-break:normal;overflow-wrap:anywhere;color:var(--ds-ink-3)}
+body.ns-layout .empty .e-act{margin-top:4px}
+
+/* 9.6 能力中枢：结果操作区（复制 / 导出）、自检卡、卡头图标 —— 均沿用既有令牌 */
+body.ns-layout .pro-out-head .o-actions{display:flex;gap:6px;margin-left:auto}
+body.ns-layout .pro-card .ci{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;margin-right:7px;vertical-align:-4px;color:var(--ds-accent);
+}
+body.ns-layout .pro-selfcheck{border-left:2px solid var(--ds-accent)}
+body.ns-layout .pro-selfcheck .pro-card-head{display:flex;align-items:center}
+body.ns-layout .pro-selfcheck .pro-card-head h4{margin:0}
+
+/* 标题栏工具图标与图标库统一 1.6 描边（原默认 1px，观感偏细、与导航图标不一致） */
+body.ns-layout .tb-actions .wb svg{
+  fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+}
+
+/* ═══ 10 · v6.18 FLIGHT DECK：几何 · 遥测排版 · 状态语义 · 可达性 ═════════════
+   航天级界面的本质不是深色加发光，而是「任何读数在任何窗口尺寸下都能被
+   立刻、无歧义地读对」。本节只做四件事，全部可回退、不触碰数据流：
+     ① 几何：8px 网格、同排控件统一 32px、区块间距只取 8 的倍数；
+     ② 遥测：数字等宽右对齐、标签与单位分离、行高 32px 与 1px 分隔线；
+     ③ 状态：三态用 2px 语义色条 + 文字，不靠大面积色块与彩色阴影；
+     ④ 可达：明确焦点环、长文本溢出、滚动条、密度 / 高对比 / 减少动效。
+   仍严守 v6.16 纪律：无装饰渐变、无关键帧、无毛玻璃、无入场闪烁。 */
+
+body.ns-layout{
+  --fd-grid:8px;
+  --fd-ctl:32px;          /* 单行控件唯一高度 */
+  --fd-ctl-sm:24px;       /* 紧凑密度下的行高 */
+  --fd-row:32px;          /* 表格 / 读数行 */
+  --fd-label:10px;
+  --fd-radius:var(--ds-r-s);
+  --fd-ok:var(--ds-ok);
+  --fd-warn:var(--ds-warn);
+  --fd-err:var(--ds-err);
+  --fd-info:var(--ds-info);
+}
+body.ns-layout.theme-dark{
+  --fd-ok:#5cc792; --fd-warn:#e0b356; --fd-err:#ef8a8a; --fd-info:#79a9f0;
+}
+
+/* 10.1 同排控件对齐：标题栏里 28px 工具钮 / 28px 库标签 / 32px 命令轨
+   此前基线不齐；现在统一 32px，窗口按钮仍等于 48px 标题栏高度。 */
+body.ns-layout .tb-actions .wb,
+body.ns-layout .chip-vault,
+body.ns-layout .cmdbar,
+body.ns-layout .edition-seg{height:var(--fd-ctl)}
+body.ns-layout .edition-seg{display:flex;align-items:center;padding:2px}
+body.ns-layout .edition-seg button{height:26px;display:inline-flex;align-items:center;padding:0 10px}
+body.ns-layout .tb-actions .wb{width:var(--fd-ctl)}
+body.ns-layout .win-btns .wb{height:var(--pro-title-h)}
+
+/* 10.2 按钮 / 输入 / 选择：同一高度、同一圆角、同一焦点行为 */
+body.ns-layout .btn,
+body.ns-layout .pro-actions .btn{
+  height:var(--fd-ctl);padding:0 12px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:var(--fd-radius);line-height:1;white-space:nowrap;
+}
+body.ns-layout .pro-field input,
+body.ns-layout .pro-field select,
+body.ns-layout .pro-matrix-tools input,
+body.ns-layout .mcp-channel select{
+  height:var(--fd-ctl);padding:0 9px;border-radius:var(--fd-radius);
+  font:400 12px/1 var(--ds-font);
+}
+body.ns-layout .pro-field textarea,
+body.ns-layout .mcp-channel textarea{min-height:64px;padding:8px 9px;line-height:1.6}
+body.ns-layout .btn-row{gap:var(--fd-grid);margin-top:16px}
+body.ns-layout .pro-actions{gap:var(--fd-grid)}
+body.ns-layout .pro-fields{gap:var(--fd-grid);margin-bottom:16px}
+body.ns-layout .pro-grid{gap:16px}
+body.ns-layout .page{padding:24px var(--pro-gutter) 48px}
+body.ns-layout .page-head{margin-bottom:24px;padding-bottom:16px}
+body.ns-layout .card,
+body.ns-layout .pro-card{padding:16px}
+
+/* 10.3 遥测排版：所有读数等宽、表格行高 32px、表头与数据列同一左基线 */
+body.ns-layout .mono,
+body.ns-layout .sb-item,
+body.ns-layout .rail-metric b,
+body.ns-layout .k-value,
+body.ns-layout .hub-stat b,
+body.ns-layout .pro-matrix-row,
+body.ns-layout .pro-stamp,
+body.ns-layout .code-block,
+body.ns-layout .pro-out pre,
+body.ns-layout .mcp-meta{font-variant-numeric:tabular-nums}
+body.ns-layout .k-value,
+body.ns-layout .hub-stat b,
+body.ns-layout .rail-metric b{text-align:right}
+body.ns-layout .pro-matrix-row{min-height:var(--fd-row);align-items:center;padding:0 12px}
+body.ns-layout .pro-matrix-row.m-head{min-height:var(--fd-row);color:var(--ds-ink-3)}
+body.ns-layout .pro-kpi{padding:11px 16px}
+body.ns-layout .hub-stat{padding:12px 16px}
+body.ns-layout .kv{padding:8px 0;min-height:var(--fd-row);display:flex;align-items:center;justify-content:space-between;gap:16px}
+
+/* 10.4 状态语义：2px 色条 + 文字色，不用整块彩色背景抢内容 */
+body.ns-layout .o-state,
+body.ns-layout .m-state{
+  font-weight:600;letter-spacing:0;border-radius:4px;
+  border-left:2px solid var(--ds-line-3);background:var(--ds-surface-2);
+}
+body.ns-layout .o-state.ok,
+body.ns-layout .m-state.hub{border-left-color:var(--fd-ok);color:var(--fd-ok)}
+body.ns-layout .o-state.err{border-left-color:var(--fd-err);color:var(--fd-err)}
+body.ns-layout .o-state.busy,
+body.ns-layout .m-state.view{border-left-color:var(--fd-info);color:var(--fd-info)}
+body.ns-layout .o-state.idle,
+body.ns-layout .m-state.none{border-left-color:var(--fd-warn);color:var(--ds-ink-3)}
+body.ns-layout .toast.ok{border-left:2px solid var(--fd-ok)}
+body.ns-layout .toast.err{border-left:2px solid var(--fd-err)}
+body.ns-layout .toast{animation:none}
+
+/* 10.5 溢出与长文本：flex/grid 子项可收缩，路径省略，代码块自滚动不撑破卡片 */
+body.ns-layout .app,
+body.ns-layout .body,
+body.ns-layout .deck,
+body.ns-layout .deck-view,
+body.ns-layout .pane,
+body.ns-layout .page,
+body.ns-layout .card,
+body.ns-layout .pro-card,
+body.ns-layout .pro-hub,
+body.ns-layout .ent-shell,
+body.ns-layout .grid2 > *{min-width:0}
+body.ns-layout #sbPath,
+body.ns-layout .sb-item,
+body.ns-layout .rail-txt span,
+body.ns-layout .pro-kpi .k-sub{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.ns-layout .code-block,
+body.ns-layout .mcp-channel pre.code-block,
+body.ns-layout .pro-out pre{
+  max-width:100%;max-height:240px;overflow:auto;
+  border:1px solid var(--ds-line);border-radius:var(--fd-radius);
+  background:var(--ds-surface-2);color:var(--ds-ink-2);
+  font:400 10.5px/1.6 var(--ds-mono);
+  padding:9px 11px;white-space:pre;overflow-wrap:normal;word-break:normal;
+}
+body.ns-layout .toast{white-space:pre-wrap;overflow-wrap:anywhere}
+body.ns-layout .sed-item .a,
+body.ns-layout .doc-body,
+body.ns-layout .pro-note,
+body.ns-layout .mcp-note{overflow-wrap:anywhere}
+
+/* 10.6 宿主接入卡（标准接口）：标签、读数、配置块按同一套规格 */
+body.ns-layout .mcp-channel .field{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
+body.ns-layout .mcp-channel .field > label{font-size:var(--fd-label);font-weight:600;color:var(--ds-ink-3)}
+body.ns-layout .mcp-label{
+  font-size:var(--fd-label);font-weight:600;letter-spacing:.04em;
+  color:var(--ds-ink-3);margin:12px 0 4px;
+}
+body.ns-layout .mcp-note,
+body.ns-layout .mcp-meta{font-size:11.5px;line-height:1.7;color:var(--ds-ink-3);margin:8px 0 0}
+body.ns-layout .mcp-channel .btn-row{margin-top:12px}
+
+/* 10.7 焦点 / 键盘：2px 明确焦点环，覆盖按钮、输入与自定义可聚焦元素 */
+body.ns-layout :where(button,a,input,select,textarea,[tabindex],[role="button"],[role="switch"]):focus-visible{
+  outline:2px solid var(--ds-accent);outline-offset:2px;box-shadow:none;
+}
+body.ns-layout .rail-item:focus-visible,
+body.ns-layout .btn:focus-visible{outline-offset:1px}
+
+/* 10.8 滚动条：8px 中性轨，与 8px 网格同宽，不用彩色滑块 */
+body.ns-layout ::-webkit-scrollbar{width:8px;height:8px}
+body.ns-layout ::-webkit-scrollbar-track{background:transparent}
+body.ns-layout ::-webkit-scrollbar-thumb{
+  background:var(--ds-line-2);border:2px solid transparent;background-clip:content-box;border-radius:4px;
+}
+body.ns-layout ::-webkit-scrollbar-thumb:hover{background:var(--ds-line-3);border:2px solid transparent;background-clip:content-box}
+
+/* 10.9 清掉历史层遗留的装饰：彩色渐变标题、粉色强调、紫色滑块、毛玻璃。
+   只作用于主界面常规容器；3D 星图 / 启动屏的深色观测舱背景属于内容画布，保留。 */
+body.ns-layout .titlebar,
+body.ns-layout .outline,
+body.ns-layout .menu,
+body.ns-layout .modal-root,
+body.ns-layout .onboard,
+body.ns-layout .appearance-pop,
+body.ns-layout .cmd-results,
+body.ns-layout .sprite-pop,
+body.ns-layout .toast,
+body.ns-layout .fp-bar{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.ns-layout .sprite-pop-tt{
+  background:none;-webkit-background-clip:border-box;background-clip:border-box;
+  color:var(--ds-ink);letter-spacing:0;font-weight:600;
+}
+body.ns-layout .sprite-pop-note b{color:var(--ds-ink-2);font-weight:600}
+body.ns-layout .sprite-pop-scale input[type="range"]{accent-color:var(--ds-accent)}
+body.ns-layout .sprite-pop-scale b{color:var(--ds-ink)}
+body.ns-layout .sprite-switch.on,
+body.ns-layout .omni-tab.is-on,
+body.ns-layout .lm-bar i,
+body.ns-layout .onboard-dev-avatar{background:var(--ds-accent);background-image:none;box-shadow:none}
+body.ns-layout .omni-topbar{background:var(--ds-surface);background-image:none}
+body.ns-layout .cite-hit{background:var(--ds-accent-soft);box-shadow:inset 0 -2px 0 var(--ds-accent)}
+
+/* 10.10 密度 / 缩放 / 高对比 / 减少动效：全部只调几何与对比，不改功能 */
+body.ns-layout.density-compact{--fd-row:var(--fd-ctl-sm);--fd-ctl:28px}
+body.ns-layout.density-compact .pro-matrix-row,
+body.ns-layout.density-compact .kv{min-height:var(--fd-row)}
+body.ns-layout.density-compact .card,
+body.ns-layout.density-compact .pro-card{padding:12px}
+body.ns-layout.density-compact .page{padding:16px var(--pro-gutter) 32px}
+body.ns-layout.scale-large .btn,
+body.ns-layout.scale-large .pro-actions .btn{font-size:13px}
+@media (prefers-contrast:more){
+  body.ns-layout .btn,
+  body.ns-layout .card,
+  body.ns-layout .pro-card,
+  body.ns-layout .pro-field input,
+  body.ns-layout .pro-field select{border-width:2px}
+  body.ns-layout .o-state,
+  body.ns-layout .m-state{border-left-width:3px}
+}
+@media (prefers-reduced-motion:reduce){
+  body.ns-layout *{animation:none !important;transition:none !important}
+}
+@media (max-width:1100px){
+  body.ns-layout .tb-actions .wb,
+  body.ns-layout .chip-vault,
+  body.ns-layout .cmdbar{height:28px}
+  body.ns-layout .pro-kpi{padding:8px 12px}
+}
+
+/* ═══ 11 · v6.19.0 LAYOUT INTEGRITY · 按真实层叠关系修复截图缺陷 ═══════════
+   根因不是"某个元素没对齐"，而是四层设计稿叠加后，高层规则击穿了低层的
+   阅读宽度与高度分配。这里用同/更高特异性把布局语义收回到一层。 */
+
+/* 11.1 阅读宽度：aurora-pro.css 的 body.pro-layout .page{max-width:1440px}
+   压过 .ask-page 的 920/960px，标题、分段控件、输入框被拉成整屏宽，
+   形成标题下方「只有左下两个小按钮」的大片空白带。回到普通块流，
+   也顺带解决 flex 子项默认收缩把长文本裁尾的问题。 */
+body.pro-layout .page.ask-page,
+body.ns-layout .page.ask-page{
+  display:block;
+  max-width:min(920px,100%);
+  min-height:0;
+}
+body.ns-layout .page.ask-page > .page-head{margin-bottom:14px}
+body.ns-layout .page.ask-page > .ask-tabs{margin:0 0 12px}
+body.ns-layout .page.ask-page > .ask-box{margin:0 0 16px}
+body.ns-layout .page.ask-page > .ask-result{margin:0}
+body.ns-layout .page.ask-page > .ask-boundary{margin:24px 0 0}
+/* 11.2 能力边界不再被 flex 拉伸顶到状态栏；长声明完整换行而不是被裁尾 */
+body.ns-layout .ask-boundary{max-width:100%;overflow-wrap:anywhere}
+body.ns-layout .ask-boundary p{line-height:1.75;overflow-wrap:anywhere}
+body.ns-layout .ask-result > .empty{min-height:200px}
+/* 11.3 分段控件：去掉与容器 gap 重复的 margin，控件与 32px 栅格同高 */
+body.ns-layout .ask-tabs{min-height:var(--fd-ctl);gap:var(--fd-grid)}
+/* 11.4 中文断行规则已就地修正到 9.5 节的 .e-hint 定义（不在叠加层重复覆盖），
+   这里只收敛空状态纵向内边距，降低整页高度压力。 */
+body.ns-layout .empty{padding:32px 24px}
+/* 11.5 空浮层与 hidden 兜底：JS 已禁止空 toast，这里再挡一层历史节点；
+   [hidden] 用 !important 防止后续任意 display 规则把弹层意外显示出来。 */
+.toast:empty{display:none}
+[hidden]{display:none!important}
+/* 11.6 外观面板：头部吸顶、去掉失效 :first-of-type 留下的双分隔线、
+   工程级界面下隐藏全大写 eyebrow（与 v6.16 去叙事化纪律一致）。 */
+body.ns-layout .ap-head{
+  position:sticky;top:0;z-index:1;background:var(--ds-surface);
+  padding:0 0 10px;margin-bottom:8px;
+}
+body.ns-layout .ap-head + .ap-section{border-top:0}
+body.ns-layout .ap-label i,
+body.ns-layout .ap-head-t span{display:none}
+body.ns-layout .ap-readout{
+  margin-top:10px;padding:8px 10px;border:1px solid var(--ds-line);
+  border-radius:var(--fd-radius);background:var(--ds-surface-2);
+  font:400 10.5px/1.6 var(--ds-mono);font-variant-numeric:tabular-nums;
+  color:var(--ds-ink-3);overflow-wrap:anywhere;
+}
+/* 11.7 问一问结果工具条：真实读数与真实操作同一行，不加装饰 */
+body.ns-layout .ask-tools{
+  display:flex;align-items:center;gap:var(--fd-grid);flex-wrap:wrap;
+  padding:8px 10px;margin:0 0 12px;
+  border:1px solid var(--ds-line);border-radius:var(--fd-radius);
+  background:var(--ds-surface-2);
+}
+body.ns-layout .ask-tools .ask-tools-n{
+  font:400 10.5px/1.5 var(--ds-mono);font-variant-numeric:tabular-nums;
+  color:var(--ds-ink-3);margin-right:auto;
+}
+
+/* ═══ 12 · v6.20.0 SYSTEM INTEGRITY · 切换 / 浮层 / 读数一致性 ═══════════
+   「所有切换都出问题」不是单点样式：HUD 被 float-panel 二次包裹后同时命中
+   .graph-hud（自带边框/内边距/限高/毛玻璃）与 .fp-content（相对定位/去限高）
+   两套规则，形成双层外壳与双层滚动，说明文字先被挤到边界；结构视图按钮又与
+   FLIGHT DECK 的 32px 控件不同高。这里把布局语义收回到一层。 */
+
+/* 12.1 只保留一层外壳：.float-panel 负责边框/背景/圆角/限高，内容只滚动 */
+body.ns-layout .fp-content.graph-hud,
+body.ns-layout .fp-content.graph-card{
+  padding:10px 12px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  max-height:none;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+}
+/* 12.2 五种结构视图统一 32px 行高；奇数个时最后一个跨满整行，不被拉伸错位 */
+body.ns-layout .view-modes{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:var(--fd-ctl);
+  gap:var(--fd-grid);
+  align-items:stretch;
+}
+body.ns-layout .vm-btn{
+  height:var(--fd-ctl);
+  padding:0 6px;
+  min-width:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:var(--fd-radius);
+  font-size:11px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1;
+}
+body.ns-layout .vm-btn:focus-visible{outline:2px solid var(--ds-info);outline-offset:1px}
+body.ns-layout .view-modes--layout .vm-btn:last-child:nth-child(odd){grid-column:1 / -1}
+/* 12.3 说明文字允许完整换行，不再被双层滚动裁到只剩半行 */
+body.ns-layout .level-note,
+body.ns-layout .level-hint{
+  min-height:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  line-height:1.6;
+}
+body.ns-layout .level-hint{margin-top:6px;padding-left:7px}
+body.ns-layout .hud-title{margin-bottom:6px}
+/* 12.4 状态栏显式分配各段宽度：每段独立省略，右端不再被 overflow:hidden 裁掉 */
+body.ns-layout .statusbar{
+  display:flex;align-items:center;
+  height:var(--fd-row);flex:0 0 var(--fd-row);
+  padding:0 12px;gap:8px;overflow:hidden;
+}
+body.ns-layout .sb-grow{flex:1 1 auto;min-width:8px;display:block}
+body.ns-layout .sb-item{min-width:0;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.ns-layout #sbPath{flex:0 1 26vw;max-width:26vw}
+body.ns-layout #sbStatus{flex:1 1 auto;min-width:0}
+body.ns-layout #sbSel{flex:0 1 18vw;max-width:18vw}
+body.ns-layout #sbCaps{flex:0 0 auto;max-width:34vw}
+body.ns-layout #sbEngine,
+body.ns-layout #sbLatency{flex:0 0 auto}
+body.ns-layout #sbLatency{text-align:right;font-variant-numeric:tabular-nums}
+/* 12.5 折叠导航轨：数字不再被双重 overflow 切掉，单位由 title 保留 */
+body.ns-layout.pro-rail-collapsed .rail-foot{padding:8px 4px}
+body.ns-layout.pro-rail-collapsed .rail-metric{overflow:visible}
+body.ns-layout.pro-rail-collapsed .rail-metric b{font-size:10px;letter-spacing:-.3px}
+/* 12.6 任何来源留下的空白提示节点一律不显示（JS 侧另有一道清洗） */
+.toast:empty{display:none!important}

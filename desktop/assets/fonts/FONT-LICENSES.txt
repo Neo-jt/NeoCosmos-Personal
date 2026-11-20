@@ -1,0 +1,23 @@
+# 字体版权声明与许可清单
+
+本目录字体用于 NeoCosmos 界面的中文排版。全部字体均以 **SIL Open Font License 1.1 (OFL-1.1)** 授权，可自由使用、嵌入、再分发，无需署名但保留版权声明。许可证全文见同目录 `OFL.txt`。
+
+依据 OFL 1.1 的条件条款 2，随字体分发的每一份副本均包含上方版权声明与本许可证。字体**未**启用任何保留字体名（Reserved Font Name）限制之外的再分发限制；下表版权信息逐字取自字体文件内嵌的 `name` 表（nameID 0 / 13）。
+
+| 字体文件 | 字体名称 | 版权声明（nameID 0，逐字） | 许可 | 来源 |
+|---|---|---|---|---|
+| `../NotoSansSC-VF.ttf` | Noto Sans CJK SC（思源黑体，可变字重） | © 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. | OFL-1.1 | Adobe / Google `noto-cjk` 项目；随包用于正文中文字体 (`styles.css` @font-face) |
+| `../NotoSerifSC-VF.ttf` | Noto Serif CJK SC（思源宋体，可变字重） | © 2017-2023 Adobe (http://www.adobe.com/). | OFL-1.1 | Adobe / Google `noto-cjk` 项目；随包用于标题中文字体 (`styles.css` @font-face) |
+| `LiuJianMaoCao-Regular.ttf` | Liu Jian Mao Cao | Copyright 2018 The Liu Jian Mao Cao Project Authors (https://www.github.com/googlefonts/liujianmaocao) | OFL-1.1 | Google Fonts |
+| `LongCang-Regular.ttf` | Long Cang | Copyright 2018 The LongCang Project Authors (https://github.com/googlefonts/longcang) | OFL-1.1 | Google Fonts |
+| `MaShanZheng-Regular.ttf` | Ma Shan Zheng | Copyright 2018 The MaShanZheng Project Authors (https://github.com/googlefonts/mashanzheng) | OFL-1.1 | Google Fonts |
+| `ZCOOLKuaiLe-Regular.ttf` | ZCOOL KuaiLe | Copyright 2018 The ZCOOL KuaiLe Project Authors (https://github.com/googlefonts/zcool-kuaile) | OFL-1.1 | Google Fonts |
+| `ZCOOLQingKeHuangYou-Regular.ttf` | ZCOOL QingKe HuangYou | Copyright 2018 The ZCOOL QingKe HuangYou Project Authors (https://www.github.com/googlefonts/zcool-qingke-huangyou) | OFL-1.1 | Google Fonts |
+| `ZhiMangXing-Regular.ttf` | Zhi Mang Xing | Copyright 2018 The ZhiMangXing Project Authors (https://github.com/googlefonts/zhimangxing) | OFL-1.1 | Google Fonts |
+
+## 合规说明
+
+- **随安装包分发**：只有正文字体 `NotoSansSC-VF.ttf` 与标题字体 `NotoSerifSC-VF.ttf` 随客户端安装包分发（见 `tools/stage-app.mjs` 资产白名单与 `tools/installer.nsi`）。两者均为 Adobe 以 OFL 1.1 发布的思源字体，允许随软件再分发，本产品已随包附上 `OFL.txt` 与本清单，满足条件条款 2。
+- **仅源码库保留**：`fonts/` 目录下 6 款 Google Fonts 中文手写字体为历史排版试验资产，**不随安装包分发**，仅保留在源码仓库中；同样以 OFL 1.1 授权并在此登记。
+- **保留字体名**：Noto Sans CJK SC 带有保留字体名 "Source"。本产品未修改字体字形、未重命名字体，故不涉及 RFN 使用限制。
+- **字体不随软件整体授权冲突**：OFL 明确许可字体与专有/开源软件捆绑分发，本产品（个人版 AGPL-3.0 / 企业版专有）与字体的 OFL 许可互不冲突。

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<!-- v6.19.0（v6.18.0 引入）：importmap 是内联脚本，CSP 必须由它的精确 SHA-256 放行。
+     这个哈希直接写在源文件里（不再只在编排产物里注入），因此直接以
+     `electron desktop/` 启动与打包后启动的 CSP 完全一致；编排脚本会幂等重算复核。 -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'sha256-1yvnH29VT6SvG/tGoNfuKL3PfgQC2PuybzkQ2c6rgyA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: neolink:; font-src 'self' data:; connect-src 'none'; worker-src 'self'; child-src 'none'" />
+<title>NeoCosmos · 关系优先的知识网络</title>
+<link rel="stylesheet" href="./styles.css" />
+<!-- v6.9.0 AURORA Design System：独立设计令牌层，叠加在基础样式之上。
+     独立成文件的好处：视觉升级不触碰任何历史规则，随时可整体回退。 -->
+<link rel="stylesheet" href="./design-system.css" />
+<!-- v6.14 AURORA PRO：第二代设计层（三段式标题栏 / 分组导航 / 阅读宽度 /
+     编辑级能力中枢）。与 v6.9 一样是独立叠加层，所有规则挂在 body.pro-layout 下，
+     关掉外观面板里的「PRO 排版」即完整回退到 6.13 观感，功能零影响。 -->
+<link rel="stylesheet" href="./aurora-pro.css" />
+<!-- v6.17 NORTHSTAR：第三代设计层。去掉同构卡片、装饰渐变、中英混排小标签与
+     调试读数，改为中性表面 + 发丝线 + 严格字阶；并补齐图标语义体系、流式字阶
+     与跨视图一致动效语言。独立叠加，可一键回退。
+     v6.18 FLIGHT DECK：在其之上做几何 / 遥测排版 / 状态语义 / 焦点与溢出的
+     工程级深化，仍是一键可回退的叠加层。 -->
+<link rel="stylesheet" href="./northstar.css" />
+<!-- v6.21.0 Quiet Cosmos v7：第四代视觉语言叠加层（最后加载、最高优先级）。
+     收敛为「实色表面 + 发丝线 + 分层柔光阴影」的单一深度语言，所有承载内容的
+     面板底全部实色不透明，并让强调色在全部 chrome 上一致生效。
+     挂 body.neo-v2：外观面板「Quiet Cosmos v7」开关、去掉该 class 或删本行
+     <link> 都能完整回退到 6.20 观感，功能零影响（状态由 appearance.js 单一持有）。 -->
+<link rel="stylesheet" href="./neocosmos-v2.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<!-- PRO 排版默认开启（写在 HTML 上，首屏零闪烁）；外观面板可关闭，偏好存 localStorage -->
+<body class="pro-layout ns-layout neo-v2">
+  <div class="app" id="app">
+    <!-- ============ 标题栏 ============ -->
+    <header class="titlebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <!-- NeoLink 原创品牌标记「突触花冠」：三层节点环（3/6/9）+ 黄金角偏移 +
+               螺旋下降的层级连接链，表达"关系有层级，节点是关系的投影"。
+               由 tools/make-icon.mjs 生成，与应用图标 PNG/ICO 同源同构。
+               独立设计，不使用任何第三方产品的图形元素。 -->
+          <img src="./assets/brand.svg" alt="" width="22" height="22" />
+        </span>
+        <span class="brand-text"><b>NeoCosmos</b><i id="brandVersion">10.18.9</i></span>
+      </div>
+
+      <!-- v6.38.0：左上角返回按钮已按用户要求移除。
+           返回能力仍完整保留：Ctrl [ 快捷键、悬浮工作窗内的返回控件、
+           以及命令面板「返回上一个功能区」，只是不再占据顶栏常驻位置。 -->
+
+      <!-- 双侧弹性拖拽区：让命令轨真正落在视觉中轴，而不是被右侧控件挤到一边 -->
+      <div class="drag" id="dragRegion"></div>
+
+      <!-- 命令轨：检索 + 命令（Ctrl K；输入 > 只看命令） -->
+      <div class="cmdbar" id="cmdbar">
+        <svg class="cmd-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8 L21 21"/></svg>
+        <input id="cmdInput" autocomplete="off" spellcheck="false"
+               placeholder="检索卡片，输入 > 执行命令" aria-label="万能面板"
+               role="combobox" aria-autocomplete="list" aria-controls="cmdResults" aria-expanded="false" />
+        <kbd>Ctrl K</kbd>
+        <div class="cmd-results" id="cmdResults" role="listbox" aria-label="检索与命令结果"></div>
+      </div>
+
+      <div class="drag drag-right" aria-hidden="true"></div>
+
+      <!-- v6.9.0：工具组收进一个语义容器，窄窗口可分级折叠 -->
+      <div class="tb-actions" role="toolbar" aria-label="快捷工具">
+        <button class="wb tb-tool" id="btnCapture" title="闪念速记（Ctrl+Shift+K）" aria-label="闪念速记">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg>
+        </button>
+        <button class="wb tb-tool" id="btnAppearance" title="外观设置：主题 / 强调色 / 尺度 / 动效" aria-label="外观设置" aria-expanded="false" aria-controls="appearancePop">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
+        <button class="wb tb-tool" id="btnTheme" title="切换 浅色 / 石墨深色 主题" aria-label="切换主题" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></svg>
+        </button>
+        <button class="wb tb-tool" id="btnAbout" title="关于 NeoCosmos（作者与原创声明）" aria-label="关于 NeoCosmos">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10.5v6M12 7.2h.01"/></svg>
+        </button>
+      </div>
+
+      <!-- 版本形态：个人版 / 企业版（v2.0.0 Aurora 双模） -->
+      <div class="edition-seg" id="editionSeg" role="tablist" aria-label="版本形态">
+        <button data-edition="personal" class="is-on" role="tab" aria-selected="true">个人版</button>
+        <button data-edition="enterprise" role="tab" aria-selected="false">企业版</button>
+      </div>
+      <!-- v2.2.1：移除了「ENTERPRISE」徽章 ——
+           标题栏里已经有「个人版 / 企业版」切换按钮在明说自己处于哪种形态，
+           再挂一个高亮的英文徽章纯属重复，而且它抢眼得像广告。
+           用户反馈「跨库管辖，取消 i 高亮去掉」即指此徽章。 -->
+
+      <button class="chip chip-vault" id="vaultChip" title="切换 / 新建 / 管理知识库">
+        <span class="dot" id="vaultDot"></span><span id="vaultName">未打开</span>
+        <svg class="chip-caret" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <div class="win-btns">
+        <button class="wb" data-act="min" title="最小化" aria-label="最小化"><svg viewBox="0 0 10 10" aria-hidden="true"><rect y="4.4" width="10" height="1.2" rx=".6"/></svg></button>
+        <button class="wb" data-act="max" title="最大化" aria-label="最大化"><svg viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="8" height="8" rx="1.2" fill="none" stroke-width="1.1"/></svg></button>
+        <button class="wb wb-close" data-act="close" title="关闭" aria-label="关闭"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.4 1.4 L8.6 8.6 M8.6 1.4 L1.4 8.6" stroke-width="1.15" fill="none"/></svg></button>
+      </div>
+    </header>
+
+    <div class="body">
+      <!-- ============ 导航轨 ============ -->
+      <nav class="rail" id="rail">
+        <!-- v6.5.0：导航项放进可滚动容器，窗口变矮时不会再被挤压重叠到状态栏 -->
+        <div class="rail-scroll" id="railScroll">
+          <!-- v6.35.0：全原创三段式导航 —— 星图 / 工作区 / 设置。
+               其余真实能力（问一问、沉淀、自主引擎、体系、语言模型、语义关联、
+               能力中枢、企业管理等）不再占据主导航，统一收纳进「设置」页的
+               "能力与服务"，并保留命令面板直达，功能零丢失。 -->
+          <button class="rail-item is-active" data-view="graph" title="星图：知识卡片的主图谱（id 三维坐标体系）" aria-current="page">
+            <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M12 12 L17.6 7"/><path d="M12 12 L5.4 8.2"/><path d="M12 12 L15.6 18.4"/><path d="M12 12 L6.2 16.8"/><path d="M17.6 7 L5.4 8.2"/><circle cx="12" cy="12" r="2.6"/><circle cx="17.6" cy="7" r="1.6"/><circle cx="5.4" cy="8.2" r="1.6"/><circle cx="15.6" cy="18.4" r="1.6"/><circle cx="6.2" cy="16.8" r="1.6"/></svg>
+            <span class="rail-txt"><span>星图</span><small>知识主图谱</small></span>
+          </button>
+          <button class="rail-item" data-view="workspace" title="工作区：卡片 / 文档 / 关联">
+            <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="3.2" y="4" width="7.4" height="16" rx="1.6"/><rect x="13.4" y="4" width="7.4" height="16" rx="1.6"/><path d="M10.6 9.6h2.8M10.6 14.4h2.8"/></svg>
+            <span class="rail-txt"><span>工作区</span><small>卡片 · 文档 · 关联</small></span>
+          </button>
+        </div><!-- /rail-scroll -->
+        <!-- v6.35.0：设置按钮独立置于导航底部，与"系统层"语义对齐
+             v6.41.0：移除 title，鼠标悬停不再弹出提示；按钮本身已有可见文字标签。 -->
+        <button class="rail-item rail-settings" data-view="settings" id="railItemSettings">
+          <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.1A1.7 1.7 0 0 0 8.98 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.62 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.1A1.7 1.7 0 0 0 4.7 8.98a1.7 1.7 0 0 0-.34-1.87l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9.06 4.6 1.7 1.7 0 0 0 10.1 3.04V3h4v.1a1.7 1.7 0 0 0 1.02 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.87 1.7 1.7 0 0 0 1.56 1.03H21v4h-.1a1.7 1.7 0 0 0-1.5 1.04z"/></svg>
+          <span class="rail-txt"><span>设置</span><small>图谱 · 能力 · 关于</small></span>
+        </button>
+        <!-- v6.20：取数前一律显示「—」，不再用 0 冒充真实计数 -->
+        <div class="rail-foot">
+          <div class="rail-metric"><b id="mNodes">—</b><span>卡片</span></div>
+          <div class="rail-metric"><b id="mEdges">—</b><span>突触</span></div>
+          <div class="rail-metric" id="mCrossWrap" style="display:none"><b id="mCross">—</b><span>跨库</span></div>
+        </div>
+        <!-- v6.14：PRO 分组导航可一键折叠回图标轨，偏好存 localStorage -->
+        <button class="rail-toggle" id="railToggle" type="button" title="折叠 / 展开导航" aria-label="折叠或展开导航" aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5l-7 7 7 7"/></svg>
+          <span>收起导航</span>
+        </button>
+      </nav>
+
+      <!-- ============ 舞台 ============ -->
+      <div class="deck" id="deck">
+        <!-- 工作区：星图导航台 | 文档台 | 关联卡片栏 -->
+        <section class="deck-view is-active" id="viewWorkspace">          <aside class="pane pane-left" id="paneLeft"></aside>
+          <div class="splitter" id="spLeft" title="拖动调整宽度"></div>
+          <main class="pane pane-mid" id="paneMid"></main>
+          <div class="splitter" id="spRight" title="拖动调整宽度"></div>
+          <aside class="pane pane-right" id="paneRight"></aside>
+
+          <!-- v2.1.0：侧栏最小化把手（面板收起后仍可一键还原，不留死角） -->
+          <button class="pane-restore pane-restore-left" id="restoreLeft" type="button"
+                  title="展开卡片网络 (Ctrl+B)" aria-label="展开卡片网络">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+            <span>卡片网络</span>
+          </button>
+          <button class="pane-restore pane-restore-right" id="restoreRight" type="button"
+                  title="展开关联卡片 (Ctrl+Alt+B)" aria-label="展开关联卡片">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            <span>关联卡片</span>
+          </button>
+        </section>
+        <section class="deck-view" id="viewGraph"></section>
+        <section class="deck-view" id="viewMap"></section>
+        <section class="deck-view" id="viewSettle"></section>
+        <section class="deck-view" id="viewConsolidate"></section>
+        <section class="deck-view" id="viewAtlas"></section>
+        <section class="deck-view" id="viewTeam"></section>
+        <section class="deck-view" id="viewVaults"></section>
+        <section class="deck-view" id="viewAsk"></section>
+        <section class="deck-view" id="viewAstra"></section>
+        <!-- v6.14：能力中枢 —— 真实内核能力的可操作入口 + 源码生成的能力矩阵 -->
+        <section class="deck-view" id="viewCapabilities"></section>
+        <section class="deck-view" id="viewNeolm"></section>
+        <!-- v6.32.0：语义回流层 -->
+        <section class="deck-view" id="viewSemantic"></section>
+        <section class="deck-view" id="viewEnterprise"></section>
+        <section class="deck-view" id="viewConsole"></section>
+        <section class="deck-view" id="viewMind3d"></section>
+        <!-- v6.35.0：全原创设置页（外观 / 图谱 / 能力 / 知识库 / 关于） -->
+        <section class="deck-view" id="viewSettings"></section>
+        <!-- v6.38.0：原创增强——工作台收藏夹（星标 + 最近打开） -->
+        <section class="deck-view" id="viewStarred"></section>
+      </div>
+    </div>
+
+    <!-- v6.36.0：悬浮工作窗层。设置与能力视图逐层浮出，底层功能区保持原位。 -->
+    <div class="float-stage" id="floatStage" hidden>
+      <div class="float-scrim" id="floatScrim" aria-hidden="true"></div>
+    </div>
+
+    <!-- v6.20：状态栏所有初始值都是加载态，真实值由 app:init / vault:info / 各视图写入 -->
+    <footer class="statusbar">
+      <span class="sb-item" id="sbPath">—</span>
+      <span class="sb-sep"></span>
+      <span class="sb-item" id="sbStatus">正在启动…</span>
+      <span class="sb-grow"></span>
+      <span class="sb-item" id="sbSel">—</span>
+      <span class="sb-sep"></span>
+      <span class="sb-item mono" id="sbCaps" title="源码生成的能力清单读数（构建期快照）">能力清单 · 读取中</span>
+      <span class="sb-sep"></span>
+      <span class="sb-badge" id="sbEngine">—</span>
+      <span class="sb-item mono" id="sbLatency">—</span>
+    </footer>
+  </div>
+
+  <div class="menu" id="menuRoot"></div>
+  <div class="modal-root" id="modalRoot"></div>
+  <div class="toast-root" id="toastRoot"></div>
+
+  <!-- v6.9.0：外观工作室 —— 设计系统第一次成为用户可感知、可把玩的产品能力 -->
+  <div class="appearance-pop" id="appearancePop" data-popover hidden role="dialog" aria-label="外观设置">
+    <div class="ap-head">
+      <div class="ap-head-t"><b>外观</b><span>APPEARANCE</span></div>
+      <button class="ap-close" id="appearanceClose" aria-label="关闭外观设置">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="ap-section">
+      <div class="ap-label">主题 <i>THEME</i></div>
+      <div class="ap-themes" role="radiogroup" aria-label="主题">
+        <button class="ap-theme" data-appearance-mode="light" role="radio" aria-checked="false">
+          <span class="ap-preview ap-preview-light" aria-hidden="true"><i></i><em></em><em></em><u></u></span>
+          <b>浅色</b>
+        </button>
+        <button class="ap-theme" data-appearance-mode="dark" role="radio" aria-checked="false">
+          <span class="ap-preview ap-preview-dark" aria-hidden="true"><i></i><em></em><em></em><u></u></span>
+          <b>深色</b>
+        </button>
+        <button class="ap-theme" data-appearance-mode="system" role="radio" aria-checked="false">
+          <span class="ap-preview ap-preview-system" aria-hidden="true"><i></i><em></em><em></em><u></u></span>
+          <b>跟随系统</b>
+        </button>
+      </div>
+    </div>
+
+    <div class="ap-section">
+      <div class="ap-label">强调色</div>
+      <div class="ap-accents" role="radiogroup" aria-label="强调色">
+        <button class="ap-swatch a-cobalt"  data-appearance-accent="cobalt"   role="radio" aria-checked="false" title="钴蓝 Cobalt" aria-label="钴蓝"><i></i><span>钴蓝</span></button>
+        <button class="ap-swatch a-graphite" data-appearance-accent="graphite" role="radio" aria-checked="false" title="石墨 Graphite" aria-label="石墨"><i></i><span>石墨</span></button>
+        <button class="ap-swatch a-teal"    data-appearance-accent="teal"     role="radio" aria-checked="false" title="青碧 Teal" aria-label="青碧"><i></i><span>青碧</span></button>
+        <button class="ap-swatch a-amber"   data-appearance-accent="amber"    role="radio" aria-checked="false" title="琥珀 Amber" aria-label="琥珀"><i></i><span>琥珀</span></button>
+        <button class="ap-swatch a-violet"  data-appearance-accent="violet"   role="radio" aria-checked="false" title="堇紫 Violet" aria-label="堇紫"><i></i><span>堇紫</span></button>
+      </div>
+    </div>
+
+    <div class="ap-section ap-inline">
+      <div class="ap-inline-l"><span>界面尺度</span></div>
+      <div class="ap-seg" role="group" aria-label="界面尺度">
+        <button data-appearance-scale="standard">标准</button>
+        <button data-appearance-scale="large">大字号</button>
+      </div>
+    </div>
+    <div class="ap-section ap-inline">
+      <div class="ap-inline-l"><span>信息密度</span></div>
+      <div class="ap-seg" role="group" aria-label="信息密度">
+        <button data-appearance-density="cozy">舒适</button>
+        <button data-appearance-density="compact">紧凑</button>
+      </div>
+    </div>
+    <div class="ap-section ap-inline">
+      <div class="ap-inline-l"><span>界面动效</span></div>
+      <button class="ap-switch" id="appearanceMotion" role="switch" aria-checked="true" aria-label="界面动效"><i></i></button>
+    </div>
+    <!-- v6.14：AURORA PRO 排版层可一键回退到 6.13 观感，便于逐项对照 -->
+    <div class="ap-section ap-inline">
+      <div class="ap-inline-l"><span>PRO 排版</span></div>
+      <button class="ap-switch on" id="appearancePro" role="switch" aria-checked="true" aria-label="PRO 排版"><i></i></button>
+    </div>
+    <!-- v6.16：工程级界面（中性色 / 无装饰 / 去调试读数），默认开启 -->
+    <div class="ap-section ap-inline">
+      <div class="ap-inline-l"><span>工程级界面</span></div>
+      <button class="ap-switch on" id="appearanceNorthstar" role="switch" aria-checked="true" aria-label="工程级界面"><i></i></button>
+    </div>
+    <!-- v6.21.0：Quiet Cosmos v7（实色分层 / 发丝线 / 统一强调色），默认开启。
+         关闭即完整回退到 6.20 观感；不是纯展示标签，绑定见 app.js。 -->
+    <div class="ap-section ap-inline">
+      <div class="ap-inline-l"><span>Quiet Cosmos v7</span></div>
+      <button class="ap-switch on" id="appearanceV7" role="switch" aria-checked="true" aria-label="Quiet Cosmos v7 视觉层"><i></i></button>
+    </div>
+
+    <div class="ap-foot">
+      <button class="ap-reset" id="appearanceReset">恢复默认</button>
+      <span>界面设置</span>
+    </div>
+    <!-- v6.19.0：当前生效配置的真实读数，由 appearance.js 的单一状态源写入 -->
+    <div class="ap-readout" id="apReadout" role="status" aria-live="polite">—</div>
+  </div>
+
+  <!-- v6.41.0：桌面精灵开启弹层已移除（用户要求删除桌面精灵）。 -->
+
+  <!-- v6.10：启动屏 —— 好莱坞级「星图诞生」WebGL 演出（boot-cosmos.js）。
+       画布在底层、CSS 几何作为无 WebGL 时的回落、字标浮层在最上层。
+       降级：WebGL 不可用 / 减少动效时，boot-cosmos 自动回落到 CSS 几何版本。 -->
+  <div class="boot" id="boot">
+    <canvas class="boot-canvas" id="bootCanvas" aria-hidden="true"></canvas>
+    <div class="boot-art" aria-hidden="true">
+      <span class="boot-orbit o1"></span><span class="boot-orbit o2"></span><span class="boot-orbit o3"></span>
+      <span class="boot-spoke s1"></span><span class="boot-spoke s2"></span><span class="boot-spoke s3"></span>
+      <span class="boot-core"></span>
+      <i class="boot-node n1"></i><i class="boot-node n2"></i><i class="boot-node n3"></i><i class="boot-node n4"></i>
+    </div>
+    <div class="boot-overlay">
+      <div class="boot-wordmark">NEOCOSMOS</div>
+      <div class="boot-text">正在载入知识库…</div>
+      <div class="boot-sub">本地优先 · 不联网</div>
+      <div class="boot-line"><i></i></div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

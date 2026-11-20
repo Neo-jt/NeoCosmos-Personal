@@ -1,0 +1,53 @@
+/* NeoCosmos · 离线字体族
+ * 全部字体随安装包分发，零网络依赖；任意机器上中文/手写/展示/等宽渲染一致。
+ * 渲染器通过 <link> 引入本文件即可使用以下 @font-face。
+ * 路径说明：本文件位于 assets/fonts/，故同目录字体用 ./，上一级的 Noto 可变字体用 ../。
+ */
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("../NotoSansSC-VF.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("../NotoSerifSC-VF.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ma Shan Zheng";
+  src: url("./MaShanZheng-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ZCOOL KuaiLe";
+  src: url("./ZCOOLKuaiLe-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ZCOOL QingKe HuangYou";
+  src: url("./ZCOOLQingKeHuangYou-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Zhi Mang Xing";
+  src: url("./ZhiMangXing-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Liu Jian Mao Cao";
+  src: url("./LiuJianMaoCao-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Long Cang";
+  src: url("./LongCang-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}

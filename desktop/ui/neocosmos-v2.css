@@ -1,0 +1,1062 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEOCOSMOS VISUAL LANGUAGE · v7 "Quiet Cosmos" · NeoCosmos v10.18.9
+   ───────────────────────────────────────────────────────────────────────────
+   设计原则（取 Apple HIG 与 Microsoft Fluent 之「精神」，非复刻任何界面）：
+     · 实色分层表面 + 发丝线 + 分层柔光阴影 = 唯一深度语言；
+     · 所有**承载内容的面板底**（对话框 / 菜单 / 浮层 / 铭牌 / HUD / Toast）
+       一律实色、不透明、无毛玻璃 —— 满足「不要透明背景」的硬要求；
+     · 仅三处非内容底保留透明度，且都不承载文字：模态遮罩、空状态点阵水印、
+       拖拽中的浮层整体反馈；星图画布上的标签另用不透明深底 + 浅字；
+     · 强调色作为唯一品牌信号，5 种强调色一处切换、处处跟随；
+     · 面板 / 文本 / 边框 / 强调色取自 design-system.css 令牌，浅 / 深自动适配。
+       两处明确例外：窗口关闭按钮悬停用系统语义红 #e81123；星图画布恒为深空，
+       其标签用不透明深底 #171c26 + 浅字（第 10 节）。其余 # 值只是 var() 兜底
+       或遮罩用色，不参与界面配色 —— 不冒充「零硬编码色」。
+
+   原创点（不抄任何产品）：
+     ①「轨道发丝线」——标题栏底部一条 2px 强调色细线，两端渐隐，表达行星沿轨运行；
+     ②「静谧星图」空状态——极淡同色点阵水印，替代纯白空白；
+     ③ 深度只靠「实色 + 发丝线 + 柔光阴影」，彻底告别发虚/透明观感。
+
+   ── 架构纪律 ────────────────────────────────────────────────────────────────
+     本文件是最后加载、最高优先级的叠加层，全部限定在 body.neo-v2 作用域：
+     外观面板「Quiet Cosmos v7」开关、去掉 body 上的 neo-v2 类，或删 index.html
+     里这一行 <link>，都能完整回退到 6.20 观感，功能零影响。
+     仅改「背景 / 边框 / 阴影 / 文本色」，不触碰布局与交互逻辑。
+   ── v6.21.0 回归修复 ───────────────────────────────────────────────────────
+     早期稿把 .fp-plate .fp-content.cosmos-kb 写成 background:transparent，
+     而 .fp-content 与 .cosmos-kb 在 makeFloatPanel() 下是**同一元素**，
+     等于把 v6.20 刚修好的「右下角铭牌实心底」又推回透明，浅色主题下白字白底。
+     该复合选择器现在必须保持 var(--surface) 实色 + var(--text) 文字。
+   ── v6.21.1 回归修复 ───────────────────────────────────────────────────────
+     第 9 节早期稿只覆盖 .toast-root 的 top:14px，漏掉 left/right/bottom，
+     fixed 容器被上下拉伸，提示条从右下角漂到右上角（用户截图实证）。
+     现在四向全部显式声明，回到 v6.9 起「Toast 在右下角」的既定契约。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ 1 · 节奏令牌（在既有 --ds-* 之上收敛圆角 / 阴影 / 间距）═════════════ */
+body.neo-v2{
+  --nc-r:14px;            /* 卡片 / 面板 */
+  --nc-r-sm:10px;         /* 小组件 / 按钮 */
+  --nc-r-lg:18px;         /* 对话框 / 大容器 */
+  --nc-hair:var(--line);  /* 发丝线统一引用 */
+  /* 分层柔光阴影：贴纸面 → 浮空对话框，全部实色无模糊 */
+  --nc-shadow:0 1px 2px rgba(16,24,42,.08), 0 8px 22px rgba(16,24,42,.10);
+  --nc-shadow-lg:0 2px 8px rgba(16,24,42,.10), 0 20px 52px rgba(16,24,42,.16);
+  --nc-shadow-pop:0 4px 14px rgba(16,24,42,.12), 0 16px 40px rgba(16,24,42,.20);
+}
+body.neo-v2.theme-dark{
+  --nc-shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.50);
+  --nc-shadow-lg:0 2px 8px rgba(0,0,0,.55), 0 20px 52px rgba(0,0,0,.66);
+  --nc-shadow-pop:0 4px 14px rgba(0,0,0,.60), 0 16px 40px rgba(0,0,0,.74);
+}
+
+/* ═══ 2 · 统一弹出层语言（对话框 / 菜单 / 命令结果 / 外观 / 精灵弹层）═════ */
+/* 全部实色：var(--surface) 由 design-system 在浅/深模式分别解析为不透明表面色 */
+body.neo-v2 .modal,
+body.neo-v2 .menu,
+body.neo-v2 .cmd-results,
+body.neo-v2 .appearance-pop,
+body.neo-v2 .sprite-pop,
+body.neo-v2 .sheet,
+body.neo-v2 .drawer,
+body.neo-v2 .popover,
+body.neo-v2 .pop,
+body.neo-v2 .outline,
+body.neo-v2 .graph-hud,
+body.neo-v2 .graph-card,
+body.neo-v2 .graph-tip{
+  background:var(--surface);
+  border:1px solid var(--line2);
+  border-radius:var(--nc-r);
+  box-shadow:var(--nc-shadow-pop);
+  color:var(--text);
+  -webkit-backdrop-filter:none; backdrop-filter:none;   /* 统一去毛玻璃 */
+}
+body.neo-v2 .modal-root{
+  background:rgba(10,14,22,.45);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.neo-v2 .modal{ border-radius:var(--nc-r-lg); color:var(--text); }
+body.neo-v2 .menu{ border-radius:var(--nc-r); }
+body.neo-v2 .appearance-pop{ border-radius:var(--nc-r-lg); }
+body.neo-v2 .sprite-pop{ border-radius:var(--nc-r-lg); border-color:var(--line2); }
+
+/* ═══ 3 · 标题栏：实色 + 轨道发丝线，去除毛玻璃与渐变发虚 ═════════════ */
+body.neo-v2 .titlebar{
+  background:var(--surface);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(255,255,255,.02);
+  gap:10px; padding:0 12px 0 14px;
+  color:var(--text);
+}
+/* 旧 AURORA 的渐变轨道线：收敛为一条两端渐隐的 2px 强调色细线（原创"轨道"意象）*/
+body.neo-v2 .titlebar::before{
+  content:""; position:absolute; left:14px; right:14px; bottom:-1px; height:2px;
+  background:linear-gradient(90deg,
+    transparent 0%, var(--accent) 20%, var(--accent) 80%, transparent 100%);
+  opacity:.0; transition:opacity .35s var(--ds-ease, ease);
+  pointer-events:none;
+}
+body.neo-v2 .titlebar:hover::before{ opacity:.55; }
+body.neo-v2 .brand-mark{
+  width:26px; height:26px; border-radius:8px;
+  background:var(--surface-3); padding:0;
+}
+body.neo-v2 .brand-mark img{ filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)); }
+body.neo-v2 .brand-text b{ font-weight:680; letter-spacing:-.01em; color:var(--text); }
+body.neo-v2 .brand-text i{ color:var(--dim); }
+
+/* 工具按钮：圆角、悬停实色、激活用强调色（跟随 accent 系统）*/
+body.neo-v2 .tb-tool{
+  width:32px; height:32px; border-radius:var(--nc-r-sm);
+  display:grid; place-items:center; color:var(--muted);
+  transition:background .12s ease, color .12s ease;
+}
+body.neo-v2 .tb-tool:hover{ background:var(--surface-3); color:var(--text); }
+body.neo-v2 .tb-tool[aria-expanded="true"],
+body.neo-v2 .tb-tool[aria-pressed="true"]{
+  background:var(--accent-soft); color:var(--accent-strong);
+}
+body.neo-v2 .win-btns .wb{ border-radius:var(--nc-r-sm); }
+body.neo-v2 .win-btns .wb:hover{ background:var(--surface-3); }
+body.neo-v2 .wb-close:hover{ background:#e81123; color:#fff; }
+
+/* 版本形态分段：胶囊化，激活态用实色浮起（去旧阴影/渐变）*/
+body.neo-v2 .edition-seg{
+  border-radius:999px; background:var(--surface-3);
+  border-color:var(--line); overflow:hidden;
+}
+body.neo-v2 .edition-seg button{ border-radius:999px; color:var(--muted); padding:4px 13px; }
+body.neo-v2 .edition-seg button:hover{ color:var(--text); }
+body.neo-v2 .edition-seg button.is-on{
+  background:var(--surface); color:var(--text); font-weight:640;
+  box-shadow:var(--ds-e1, 0 1px 2px rgba(16,24,42,.18));
+}
+
+/* 知识库胶囊：跟随 accent 圆点 */
+body.neo-v2 .chip{
+  height:30px; border-radius:999px;
+  background:var(--surface-3); border-color:transparent; color:var(--text);
+}
+body.neo-v2 .chip:hover{ background:var(--surface-4, var(--surface-3)); }
+body.neo-v2 .chip .dot{ background:var(--accent); }
+
+/* 命令轨：实色内嵌框，焦点用强调环 */
+body.neo-v2 .cmdbar{
+  border-radius:999px; background:var(--surface-3); color:var(--text);
+  border:1px solid var(--line);
+}
+body.neo-v2 .cmdbar input{ color:var(--text); background:transparent; }
+body.neo-v2 .cmdbar input::placeholder{ color:var(--dim); }
+body.neo-v2 .cmdbar kbd{ color:var(--dim); border:1px solid var(--line); background:var(--surface); }
+
+/* ═══ 4 · 导航轨：明确层级 + 清晰的激活指示 ═══════════════════════════ */
+/* v6.23.0 修复：6.21.0 本层把**展开态**导航轨也硬写成 66px，却没同步隐藏文字标签，
+   于是 17px 图标、12.5px 标签、分组标题、统计数字和「收起导航」全被挤在 66px 内：
+   标签只露出首字、数字溢出、「收起导航」被逐字折成竖排。现在按真实折叠状态给宽度，
+   折叠态仍回到紧凑图标轨，其余视觉语言不变。 */
+body.neo-v2:not(.pro-rail-collapsed) .rail{
+  background:var(--surface-2);
+  border-right:1px solid var(--line);
+  width:var(--pro-rail-w); flex:0 0 var(--pro-rail-w);
+}
+body.neo-v2.pro-rail-collapsed .rail{
+  background:var(--surface-2);
+  border-right:1px solid var(--line);
+  width:var(--pro-rail-w-mini); flex:0 0 var(--pro-rail-w-mini);
+}
+body.neo-v2:not(.pro-rail-collapsed) .rail-scroll{ padding:0 10px 14px; align-items:stretch; }
+body.neo-v2:not(.pro-rail-collapsed) .rail-group{
+  font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--dim); margin:14px 0 4px; padding:0 12px; width:auto; text-align:left; font-weight:600;
+}
+body.neo-v2.pro-rail-collapsed .rail-group{
+  font-size:9px; letter-spacing:1.2px; text-transform:uppercase;
+  color:var(--dim); margin:10px 0 4px; padding:0; width:100%; text-align:center; font-weight:600;
+}
+body.neo-v2 .rail-item{
+  position:relative; border-radius:var(--nc-r-sm);
+  color:var(--dim); transition:color .14s ease, background .14s ease;
+}
+body.neo-v2:not(.pro-rail-collapsed) .rail-item{
+  width:100%; min-height:38px; flex-direction:row; justify-content:flex-start;
+  gap:10px; padding:8px 12px;
+}
+body.neo-v2.pro-rail-collapsed .rail-item{
+  width:44px; min-height:44px; flex-direction:column; justify-content:center;
+  gap:2px; padding:6px 0;
+}
+body.neo-v2 .rail-item .ico{ width:17px; height:17px; flex:0 0 17px; }
+body.neo-v2:not(.pro-rail-collapsed) .rail-txt{ min-width:0; flex:1 1 auto; }
+body.neo-v2:not(.pro-rail-collapsed) .rail-txt span{
+  display:block; font-size:12.5px; line-height:1.35; font-weight:520;
+}
+body.neo-v2.pro-rail-collapsed .rail-txt{ display:none; }
+body.neo-v2 .rail-item small{ display:none; }  /* 功能说明由原生 title 提供，不再挤占宽度 */
+body.neo-v2:not(.pro-rail-collapsed) .rail-foot{ border-top:1px solid var(--line); padding:10px 14px 8px; gap:2px; }
+body.neo-v2:not(.pro-rail-collapsed) .rail-metric{ justify-content:space-between; overflow:visible; }
+body.neo-v2:not(.pro-rail-collapsed) .rail-metric b{ font-size:12px; }
+body.neo-v2:not(.pro-rail-collapsed) .rail-metric span{ font-size:10px; }
+body.neo-v2.pro-rail-collapsed .rail-foot{ padding:8px 4px; }
+body.neo-v2.pro-rail-collapsed .rail-metric{ justify-content:center; }
+body.neo-v2.pro-rail-collapsed .rail-metric span{ display:none; }
+body.neo-v2.pro-rail-collapsed .rail-metric b{ font-size:10px; }
+body.neo-v2 .rail-toggle{
+  width:100%; flex-direction:row; justify-content:flex-start; gap:8px;
+  padding:8px 12px; white-space:nowrap; font-size:11px;
+}
+body.neo-v2.pro-rail-collapsed .rail-toggle{ justify-content:center; padding:8px 0; }
+body.neo-v2.pro-rail-collapsed .rail-toggle span{ display:none; }
+body.neo-v2 .rail-item:hover{ background:var(--surface-3); color:var(--text); transform:none; }
+body.neo-v2 .rail-item span{ font-weight:520; color:inherit; }
+body.neo-v2 .rail-item small{ color:var(--dim); }
+/* 激活：强调色软底 + 左侧 3px 强调条（清晰、可预测，符合 Fluent 焦点语义）*/
+body.neo-v2 .rail-item.is-active{
+  background:var(--accent-soft); color:var(--accent-strong);
+}
+body.neo-v2 .rail-item.is-active small{ color:var(--accent-strong); opacity:.85; }
+body.neo-v2 .rail-item.is-active::before{
+  content:""; position:absolute; left:-9px; top:50%; transform:translateY(-50%);
+  width:3px; height:22px; border-radius:3px; background:var(--accent);
+}
+body.neo-v2 .rail-item.is-active .ico{ stroke-width:1.9; }
+body.neo-v2 .rail-foot{ border-top:1px solid var(--line); padding-top:8px; }
+body.neo-v2 .rail-metric b{ color:var(--text); }
+body.neo-v2 .rail-metric span{ color:var(--dim); }
+
+/* ═══ 5 · 状态栏：发丝线顶边 + 语义徽章跟随令牌 ═════════════════════ */
+body.neo-v2 .statusbar{
+  background:var(--surface-2); border-top:1px solid var(--line);
+  color:var(--dim); font-size:11px;
+}
+body.neo-v2 .sb-item{ color:var(--dim); }
+body.neo-v2 .sb-item.mono{ color:var(--muted); }
+body.neo-v2 .sb-sep{ background:var(--line2); }
+body.neo-v2 .sb-badge{
+  border:1px solid var(--line2);
+  background:var(--surface-3);
+  color:var(--ds-ok, #0f8a63);
+  border-radius:999px;
+}
+body.neo-v2 .sb-badge.err{ color:var(--ds-err, #c8443f); }
+
+/* ═══ 6 · 浮动面板：实色 + 发丝线 + 分层柔光（去毛玻璃）══════════════ */
+body.neo-v2 .float-panel{
+  border:1px solid var(--line2); border-radius:var(--nc-r);
+  box-shadow:var(--nc-shadow-lg); background:var(--surface);
+  overflow:hidden; color:var(--text);
+}
+body.neo-v2 .fp-bar{
+  background:var(--surface-2);
+  border:1px solid var(--line); border-bottom:none;
+  border-radius:var(--nc-r) var(--nc-r) 0 0;
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  color:var(--muted);
+}
+body.neo-v2 .fp-title{ color:var(--text); font-weight:600; letter-spacing:.4px; }
+body.neo-v2 .fp-content{ background:var(--surface); color:var(--text); }
+body.neo-v2 .fp-grip{ color:var(--dim); }
+body.neo-v2 .fp-min{ color:var(--dim); }
+body.neo-v2 .fp-min:hover{ background:var(--surface-3); color:var(--text); }
+body.neo-v2 .float-panel.is-dragging{ box-shadow:var(--nc-shadow-lg); opacity:.97; }
+
+/* ═══ 7 · 库铭牌（右下"当前知识库"面板）：主题自适应、强调色圆点 ══════ */
+body.neo-v2 .cosmos-kb{
+  background:var(--surface);
+  border:1px solid var(--line2);
+  box-shadow:var(--nc-shadow);
+  color:var(--text);
+}
+body.neo-v2 .cosmos-kb .kb-name{ color:var(--text); text-shadow:none; }
+body.neo-v2 .cosmos-kb .kb-name::before{
+  background:var(--kc, var(--accent)); box-shadow:0 0 0 3px var(--accent-soft);
+}
+body.neo-v2 .cosmos-kb .kb-name:hover{ color:var(--accent-strong); }
+body.neo-v2 .cosmos-kb .kb-meta{ color:var(--dim); text-shadow:none; }
+body.neo-v2 .cosmos-kb.is-empty .kb-name{ color:var(--muted); }
+body.neo-v2 .cosmos-kb.is-empty .kb-name::before{
+  background:var(--dim); box-shadow:none;
+}
+
+/* 右下"当前知识库"浮动面板：跟随主题成为实色卡，消除旧版永远深底的不协调 */
+body.neo-v2 .float-panel.fp-plate{
+  border:1px solid var(--line2); box-shadow:var(--nc-shadow-lg); background:var(--surface);
+}
+body.neo-v2 .float-panel.fp-plate .fp-bar{
+  background:var(--surface-2); border:1px solid var(--line); border-bottom:none;
+  color:var(--muted);
+}
+body.neo-v2 .float-panel.fp-plate .fp-title{ color:var(--text); }
+body.neo-v2 .float-panel.fp-plate .fp-grip{ color:var(--dim); }
+body.neo-v2 .float-panel.fp-plate .fp-min{ color:var(--dim); }
+body.neo-v2 .float-panel.fp-plate .fp-min:hover{ background:var(--surface-3); color:var(--text); }
+body.neo-v2 .float-panel.fp-plate .fp-content{
+  background:var(--surface); border:1px solid var(--line); border-top:none; color:var(--text);
+}
+/* 内容元素同时是 .fp-content 与 .cosmos-kb（同一元素）：没有"父级 fp-content"
+   可以托底，两处选择器命中的是同一个节点。这里必须自己保持实色与实色文字，
+   否则铭牌又会变成透明底 / 白字白底 —— v6.20 已修过一次，不得回退。 */
+body.neo-v2 .float-panel.fp-plate .fp-content.cosmos-kb{
+  border:none; box-shadow:none;
+  background:var(--surface); color:var(--text);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  padding:9px 13px 10px; border-radius:0;
+}
+body.neo-v2 .float-panel.fp-plate .fp-content.cosmos-kb .kb-name{ color:var(--text); }
+body.neo-v2 .float-panel.fp-plate .fp-content.cosmos-kb .kb-meta{ color:var(--dim); }
+
+/* ═══ 8 · 星图 HUD / 卡片详情 / 大纲：实色化（此前是 rgba(255,255,255,.9x) 浅色硬编码）══ */
+body.neo-v2 .graph-hud{
+  background:var(--surface); color:var(--text);
+  border:1px solid var(--line2); box-shadow:var(--nc-shadow-pop);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.neo-v2 .graph-hud .hud-title{ color:var(--dim); }
+body.neo-v2 .graph-hud .hud-row{ color:var(--muted); }
+body.neo-v2 .graph-hud .hud-row:hover{ background:var(--surface-3); color:var(--text); }
+body.neo-v2 .graph-hud .hud-row .cnt{ color:var(--dim); }
+body.neo-v2 .graph-card{
+  background:var(--surface); color:var(--text);
+  border:1px solid var(--line2); box-shadow:var(--nc-shadow-pop);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.neo-v2 .graph-card .gc-title{ color:var(--text); }
+body.neo-v2 .graph-card .gc-path{ color:var(--dim); }
+body.neo-v2 .graph-card .gc-text{ color:var(--muted); }
+body.neo-v2 .graph-card .gc-rel .rl{ color:var(--muted); }
+body.neo-v2 .graph-card .gc-rel .rl:hover{ color:var(--text); }
+body.neo-v2 .graph-tip{
+  background:var(--surface-2); color:var(--muted);
+  border:1px solid var(--line); box-shadow:var(--nc-shadow);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.neo-v2 .outline .o-head{ color:var(--dim); }
+body.neo-v2 .outline .o-item{ color:var(--muted); }
+body.neo-v2 .outline .o-item:hover{ background:var(--surface-3); color:var(--text); }
+
+/* ═══ 9 · Toast：右下角实色卡 + 分层柔光 + 语义左边线 ═══════════════════ */
+/* v6.21.1 回归修复（真机截图实证）：早期稿这里只写了 top:14px，却没同步覆盖
+   design-system.css 的 left:auto / right / bottom。position:fixed 容器同时拿到
+   top 与 bottom 后被纵向拉伸，提示条从右下角漂到右上角，正好压住标题栏右侧的
+   视图标签。这里显式写全四向 + transform，把它钉回右下角（状态栏上方 20px、
+   右侧 24px，与 v6.9 起的既定契约一致），此后任何基础层调整都不能拖走它。 */
+body.neo-v2 .toast-root{
+  left:auto; right:var(--ds-6); top:auto; bottom:calc(var(--ds-10) + 10px);
+  transform:none; align-items:flex-end;
+}
+body.neo-v2 .toast{
+  background:var(--surface); color:var(--text);
+  border:1px solid var(--line2); border-left:3px solid var(--accent);
+  border-radius:var(--nc-r-sm); box-shadow:var(--nc-shadow-pop);
+}
+body.neo-v2 .toast.ok{ border-left-color:var(--ds-ok, #0f8a63); }
+body.neo-v2 .toast.err{ border-left-color:var(--ds-err, #c8443f); }
+
+/* ═══ 10 · 深空星系标签：实色（星图画布恒为深空，标签用不透明深底 + 浅字）══ */
+body.neo-v2 .xg-label{
+  background:#171c26;
+  border:1px solid var(--line2);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  color:#d6dcf2;
+}
+body.neo-v2 .xg-label.is-cur{ color:#fff; border-color:rgba(255,209,102,.55); }
+
+/* ═══ 11 · 焦点环：全部走强调色，可预测（HIG/Fluent 一致）════════════ */
+body.neo-v2 .rail-item:focus-visible,
+body.neo-v2 .tb-tool:focus-visible,
+body.neo-v2 .chip:focus-visible,
+body.neo-v2 .wb:focus-visible,
+body.neo-v2 .cmdbar:focus-within,
+body.neo-v2 .edition-seg button:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+body.neo-v2 .cmdbar:focus-within{ border-color:var(--accent); box-shadow:var(--focus); }
+
+/* ═══ 12 · "静谧星图"空状态水印（原创：极淡同色点阵，替代纯白空白）════ */
+body.neo-v2 .neo-cosmos-watermark{
+  position:absolute; inset:0; pointer-events:none; opacity:.5;
+  background-image:radial-gradient(var(--line2) 1px, transparent 1.4px);
+  background-size:26px 26px; background-position:center;
+  -webkit-mask-image:radial-gradient(ellipse 60% 60% at 50% 45%, #000 0%, transparent 75%);
+          mask-image:radial-gradient(ellipse 60% 60% at 50% 45%, #000 0%, transparent 75%);
+}
+
+/* ═══ 13 · v6.23.0 功能控件统一语言（截图反馈：各项功能显示不协调）════════
+   根因：northstar 把 .btn.ghost 的边框整体抹成 transparent，导致同一行按钮里
+   只有实心的那一个「看得出是按钮」；各页 .btn-row 的按钮高度、select 高度、
+   卡片内边距与栅格列宽也各不相同。这里用局部高特异性规则统一到一套尺寸，
+   不改任何 onclick / 数据流，不写 !important，也不触碰已有的分段控件与操作网格。 */
+body.neo-v2 .page .grid2{ grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; }
+body.neo-v2 .page .card,
+body.neo-v2 .page .pro-card{ padding:16px; }
+body.neo-v2 .page .card > h3{
+  font-size:13px; font-weight:600; line-height:1.4; margin:0 0 12px; min-height:20px;
+}
+body.neo-v2 .page .btn-row{ gap:8px; margin-top:12px; }
+body.neo-v2 .page .btn-row > .btn{
+  min-height:34px; height:34px; padding:0 14px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:11.5px; line-height:1; white-space:nowrap;
+  border:1px solid var(--line); border-radius:8px;
+  background:var(--surface); color:var(--text); box-shadow:none;
+}
+body.neo-v2 .page .btn-row > .btn.ghost{
+  border-color:var(--line); background:var(--surface); color:var(--text);
+}
+body.neo-v2 .page .btn-row > .btn:hover{ background:var(--surface-3); border-color:var(--accent); }
+body.neo-v2 .page .btn-row > .btn:not(.ghost){
+  background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);
+}
+body.neo-v2 .page .field{ gap:6px; margin-bottom:12px; }
+body.neo-v2 .page .field label{
+  font-size:10.5px; font-weight:600; letter-spacing:.03em; text-transform:none; color:var(--dim);
+}
+body.neo-v2 .page .field select,
+body.neo-v2 .page .field input,
+body.neo-v2 .page .mcp-channel .field select{
+  min-height:34px; height:34px; padding:0 10px; font-size:11.5px;
+  border:1px solid var(--line); border-radius:8px;
+  background:var(--surface); color:var(--text);
+}
+body.neo-v2 .page .field textarea{
+  height:auto; min-height:96px; padding:9px 10px; line-height:1.6; font-size:11.5px;
+  border:1px solid var(--line); border-radius:8px;
+  background:var(--surface); color:var(--text);
+}
+body.neo-v2 .page .vault-acts .btn{ min-height:28px; height:28px; padding:0 9px; font-size:10.5px; }
+body.neo-v2 .page .btn-row > .btn.mini{ min-height:28px; height:28px; padding:0 10px; font-size:10.5px; }
+
+/* 链接作用域 / 沉淀仓库：与上面同一套控件语言 */
+body.neo-v2 .scope-table{ display:grid; gap:0; margin-top:8px; }
+body.neo-v2 .scope-tr{
+  display:grid; grid-template-columns:minmax(0,1.6fr) 76px 68px 84px 108px;
+  align-items:center; gap:8px; min-height:40px;
+  border-bottom:1px solid var(--line); font-size:11px;
+}
+body.neo-v2 .scope-tr.conn-th{ color:var(--dim); font-size:10px; min-height:30px; }
+body.neo-v2 .scope-tr .mono{ font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.neo-v2 .scope-tr .scope-name{ min-width:0; }
+body.neo-v2 .scope-tr .scope-name b{ display:block; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.neo-v2 .scope-tr .scope-name i{ display:block; font-style:normal; font-size:10px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.neo-v2 .scope-tag{ display:inline-block; padding:2px 7px; border-radius:10px; font-size:10px; border:1px solid var(--line); }
+body.neo-v2 .scope-tag.on{ color:var(--fd-ok); border-color:var(--fd-ok); background:var(--surface-2); }
+body.neo-v2 .scope-tag.off{ color:var(--dim); border-color:var(--line); background:var(--surface-2); }
+body.neo-v2 .scope-tag.sed{ color:var(--accent-strong); border-color:var(--accent); background:var(--accent-soft); }
+body.neo-v2 .scope-ops{ display:flex; justify-content:flex-end; }
+body.neo-v2 .scope-ops .btn{ min-height:28px; height:28px; padding:0 10px; font-size:10.5px; }
+
+/* ═══ 14 · v6.24.0 全页面控件与排版统一语言（"所有页面全部协调排版"）════════
+   把 §13 已统一的「页面内按钮 / 输入 / 卡片 / 标题」扩展到**全部页面**的其余分裂控件：
+   散落的 .btn.ghost（H1）、分段控件四套实现（M5）、表格三套语言（H2/M3）、
+   空态四套实现（M4）、统计徽标 / 计数标签、以及把重复内联样式回流为 class（M6）。
+   全部限定在 body.neo-v2，关掉即完整回退；只调「背景 / 边框 / 阴影 / 文本色 / 对齐」，
+   不触及任何 onclick 与数据流，不引入新的硬编码 # 配色。 */
+
+/* 14.1 · 按钮：解开 §13 仅覆盖 .btn-row 内的局限，让 .page 内所有 .btn 一致（H1 根因）*/
+body.neo-v2 .page .btn{
+  border-radius:8px; box-shadow:none;
+  transition:background .12s ease, border-color .12s ease, color .12s ease;
+}
+body.neo-v2 .page .btn:not(.mini){
+  min-height:34px; height:34px; padding:0 14px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:11.5px; line-height:1; white-space:nowrap;
+}
+body.neo-v2 .page .btn.mini{
+  min-height:28px; height:28px; padding:0 10px; font-size:10.5px;
+  display:inline-flex; align-items:center; justify-content:center; line-height:1; white-space:nowrap;
+}
+/* ghost 在全站都恢复细边框（northstar 把 .btn.ghost 边框抹成 transparent，导致散落 ghost 看不出是按钮）*/
+body.neo-v2 .page .btn.ghost{ border-color:var(--line); background:var(--surface); color:var(--text); }
+/* 实心按钮统一用强调色软底（warn 由 design-system 保留语义红，不在此覆盖）*/
+body.neo-v2 .page .btn:not(.ghost):not(.warn):not(.mini){
+  background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);
+}
+body.neo-v2 .page .btn:hover{ background:var(--surface-3); border-color:var(--accent); }
+body.neo-v2 .page .btn:not(.ghost):not(.warn):not(.mini):hover{
+  background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);
+}
+body.neo-v2 .page .btn.ghost:hover{ background:var(--surface-3); border-color:var(--accent); }
+body.neo-v2 .page .btn:disabled,
+body.neo-v2 .page .btn[disabled]{ opacity:.42; cursor:not-allowed; }
+
+/* 14.2 · 标题外壳与字号梯度（M2）：h2 / h3 / h4 一套刻度，避免三套呈现 */
+body.neo-v2 .page-head{ margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+body.neo-v2 .page-head h2{ font-size:18px; font-weight:660; letter-spacing:-.02em; color:var(--text); }
+body.neo-v2 .page-head p{ font-size:12px; line-height:1.7; color:var(--dim); max-width:78ch; margin-top:6px; }
+body.neo-v2 .page .card > h3,
+body.neo-v2 .page .pro-card > h4,
+body.neo-v2 .page .pro-card-head h4{
+  font-size:13px; font-weight:600; line-height:1.4; margin:0 0 12px; min-height:20px; color:var(--text);
+}
+body.neo-v2 .page .card > h3 .cnt,
+body.neo-v2 .page .pro-card-head h4 .cnt{
+  font-size:10px; font-weight:500; color:var(--dim); margin-left:6px;
+}
+
+/* 14.3 · 分段控件统一（M5）：收敛四套实现到同一套胶囊语言，去掉 omni-tab 的硬编码蓝渐变 */
+body.neo-v2 .page .segment,
+body.neo-v2 .page .mode-switch,
+body.neo-v2 .page .view-modes,
+body.neo-v2 .page .omni-tab,
+body.neo-v2 .page .ask-tabs{
+  padding:3px; background:var(--surface-2); border:1px solid var(--line2); border-radius:10px;
+}
+body.neo-v2 .page .segment button,
+body.neo-v2 .page .mode-switch button,
+body.neo-v2 .page .view-modes .vm-btn,
+body.neo-v2 .page .omni-tab button,
+body.neo-v2 .page .ask-tabs .btn{
+  min-height:28px; height:28px; padding:0 12px;
+  border:1px solid transparent; background:transparent; color:var(--muted);
+  border-radius:8px; font-size:11.5px; line-height:1; cursor:pointer; white-space:nowrap;
+  transition:background .12s ease, color .12s ease, border-color .12s ease;
+}
+body.neo-v2 .page .segment button.is-on,
+body.neo-v2 .page .mode-switch button.is-on,
+body.neo-v2 .page .view-modes .vm-btn.is-on,
+body.neo-v2 .page .omni-tab button.is-on,
+body.neo-v2 .page .ask-tabs .btn.is-on{
+  background:var(--surface); color:var(--text); font-weight:640;
+  border-color:var(--line); box-shadow:var(--ds-e1, 0 1px 2px rgba(16,24,42,.18));
+}
+body.neo-v2 .page .segment button:hover:not(.is-on),
+body.neo-v2 .page .mode-switch button:hover:not(.is-on),
+body.neo-v2 .page .view-modes .vm-btn:hover:not(.is-on),
+body.neo-v2 .page .omni-tab button:hover:not(.is-on),
+body.neo-v2 .page .ask-tabs .btn:hover:not(.is-on){
+  color:var(--text); background:var(--surface-3);
+}
+
+/* 14.4 · 表格语言统一（H2/M3）：conn-table / table.grid / pro-matrix 收敛到与 scope-table 一致的描边与字号 */
+body.neo-v2 .conn-table{ display:grid; gap:0; }
+body.neo-v2 .conn-tr{
+  display:grid; align-items:center; gap:8px; min-height:40px;
+  border-bottom:1px solid var(--line); font-size:11px;
+}
+body.neo-v2 .conn-tr.conn-th{ color:var(--dim); font-size:10px; min-height:30px; }
+body.neo-v2 .conn-tag{
+  display:inline-block; padding:2px 7px; border-radius:10px; font-size:10px;
+  border:1px solid var(--line); color:var(--text);
+}
+body.neo-v2 .conn-tag.on{ color:var(--fd-ok); border-color:var(--fd-ok); background:var(--surface-2); }
+body.neo-v2 .conn-tag.off{ color:var(--dim); border-color:var(--line); background:var(--surface-2); }
+body.neo-v2 .page table.grid{ width:100%; border-collapse:collapse; font-size:11px; }
+body.neo-v2 .page table.grid th{
+  text-align:left; color:var(--dim); font-weight:600; font-size:10px;
+  padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+body.neo-v2 .page table.grid td{
+  padding:8px 10px; border-bottom:1px solid var(--line); color:var(--text); vertical-align:top;
+}
+body.neo-v2 .pro-matrix{ display:grid; gap:0; }
+body.neo-v2 .pro-matrix > *{ min-height:38px; border-bottom:1px solid var(--line); align-items:center; }
+
+/* 14.5 · 空态四套实现统一（M4）：rel-empty / empty-hint / pro-empty 全部对齐到 emptyState() 的 .empty 外观 */
+body.neo-v2 .empty,
+body.neo-v2 .rel-empty,
+body.neo-v2 .empty-hint,
+body.neo-v2 .pro-empty{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  padding:36px 24px; color:var(--dim); text-align:center;
+}
+body.neo-v2 .empty .e-ico,
+body.neo-v2 .rel-empty .e-ico,
+body.neo-v2 .empty-hint .e-ico{ color:var(--muted); }
+body.neo-v2 .empty .e-tt,
+body.neo-v2 .rel-empty .e-tt,
+body.neo-v2 .empty-hint .e-tt{ font-size:13px; font-weight:600; color:var(--text); }
+body.neo-v2 .empty .e-hint,
+body.neo-v2 .rel-empty .e-hint,
+body.neo-v2 .empty-hint .e-hint{ font-size:11.5px; line-height:1.7; color:var(--dim); max-width:46ch; }
+body.neo-v2 .empty .e-act,
+body.neo-v2 .rel-empty .e-act{ margin-top:6px; }
+
+/* 14.6 · 把重复内联样式回流为 class（M6）*/
+body.neo-v2 .hud-title{ margin-top:12px; font-size:11px; font-weight:600; color:var(--dim); }
+body.neo-v2 .hud-title:first-child{ margin-top:0; }
+body.neo-v2 .deploy-result{ white-space:pre-wrap; }
+body.neo-v2 .grid-span{ grid-column:1 / -1; }
+
+/* ═══ 15 · v6.27.0 M2 收尾：非页面区域的标题刻度（如实边界）═══════════════
+   v6.24.0 审查把 7 个"没有 .page-head"的文件一并记为待办，复核后其中
+   document / explorer / relations 是三栏布局的侧栏，graph / map2d 是全屏
+   画布，mcp-links-panel 是嵌入面板 —— 它们**不是独立页面**，强行套页面标题
+   外壳会破坏三栏布局与全屏画布。真正缺外壳的独立页面只有 capabilities.js
+   （已补 .pro-hub-head.page-head）。此处只把侧栏 / HUD 标题的刻度显式钉到
+   与 §14.2 同一套梯度，不改盒模型、不改颜色、不动任何结构与事件。
+   H3 的语义色令牌定义在 design-system.css（--sem-*），具体色值真源在
+   desktop/ui/semantic-palette.js；本层刻意不重复定义任何颜色，避免出现第二份真源。 */
+
+/* 15.1 · 三栏侧栏标题：与页面标题同梯度，保留各层既有颜色与字距 */
+body.neo-v2 .nav-head .nav-title b{ font-size:11.5px; font-weight:640; line-height:1.4; }
+/* 15.2 · 全屏画布 HUD 小标题：星图与知识地图两套 HUD 对齐 */
+body.neo-v2 .graph-hud .hud-title,
+body.neo-v2 .map-hud .hud-title{ font-size:11px; font-weight:600; line-height:1.4; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16 · v6.33.0 LAYOUT REBUILD：最高优先级层的口径收敛 + 响应式降级
+   ───────────────────────────────────────────────────────────────────────────
+   背景：本层最后加载、优先级最高，但历史上【一条 media query 都没有】。
+   v6.9 / v6.14 / v6.17 三层里写好的窄屏降级，会被本层无条件的 body.neo-v2
+   规则整片覆盖，于是 1080px 窗口下出现标题栏拥挤、导航轨计数溢出、
+   状态栏多段挤压。另一处口径漂移：同一个 .cmdbar 宽度在五代叠加层里被写成
+   430 / 420 / 340 / 280 / 240 / 220 六套，.page-head p 的行宽写成
+   860px / 78ch / 88ch / 80ch / 78ch 五套，#vaultName 写成 150/120/96/74 四套。
+   本段统一收敛到 --lay-* 令牌，并补齐本层缺失的分级降级。
+   结构性修复（命名空间隔离 / 根容器滚动 / 固定列网格）见 styles.css 末尾同版本段。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 16.1 · 单一口径：所有漂移数值收敛到令牌，不再逐层各写一套 */
+body.neo-v2 .page-head p,
+body.neo-v2 .pro-hub .pro-lede,
+body.neo-v2 .hub-note{ max-width:var(--lay-measure,76ch); line-height:1.75; }
+body.neo-v2 .doc-body{ max-width:var(--lay-measure,76ch); margin-left:auto; margin-right:auto; }
+body.neo-v2 .cmdbar{ width:min(420px,32vw); min-width:210px; }
+body.neo-v2 .chip #vaultName{ max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.neo-v2 .titlebar{ gap:10px; }
+
+/* 16.2 · 状态栏几何：本层此前只改颜色不改几何。显式钉死单行与内边距，
+         保证 27~30px 的高度里不会再出现 v6.32.0 那种叠字。 */
+body.neo-v2 .statusbar{ flex-wrap:nowrap; gap:8px; padding:0 12px; }
+body.neo-v2 .statusbar > .sb-item{ display:inline-block; padding:0; border:0;
+  border-radius:0; line-height:1.4; vertical-align:middle; }
+body.neo-v2 .statusbar > .sb-badge{ line-height:1.4; padding:1px 9px; }
+body.neo-v2 #sbStatus{ min-width:0; flex:1 1 auto; }
+
+/* 16.3 · 卡片节奏：所有内容型卡片共用一套内边距与标题梯度 */
+body.neo-v2 .page > .card,
+body.neo-v2 .semb-card,
+body.neo-v2 .nl-card{ border-radius:var(--lay-radius,12px); }
+body.neo-v2 .semb-kicker{ color:var(--accent-strong,var(--accent,#2f6bdf)); }
+body.neo-v2 .semb-card .semb-h2,
+body.neo-v2 .nl-card h2{ font-size:var(--lay-fs-title,17px); color:var(--text); }
+body.neo-v2 .semb-card .semb-h3,
+body.neo-v2 .nl-card h3{ font-size:var(--lay-fs-sec,14px); color:var(--text); }
+
+/* 16.4 · 分级降级（本层此前完全缺失，是窄窗口排版错乱的根源） */
+@media (max-width:1180px){
+  body.neo-v2 .cmdbar{ width:min(340px,30vw); min-width:190px; }
+  body.neo-v2 .brand{ flex:0 0 auto; }
+  body.neo-v2 .tb-actions #btnAbout{ display:none; }
+  body.neo-v2 .chip #vaultName{ max-width:120px; }
+  body.neo-v2 .page-head p{ max-width:68ch; }
+}
+@media (max-width:1024px){
+  body.neo-v2 .cmdbar{ width:min(280px,28vw); min-width:160px; }
+  body.neo-v2 .cmdbar kbd{ display:none; }
+  body.neo-v2 .drag-right{ display:none; }
+  body.neo-v2 .edition-seg{ display:none; }
+  body.neo-v2 .chip #vaultName{ max-width:96px; }
+  /* 窄轨里的计数：只读、单行、居中、省略，单位由 title 保留 */
+  body.neo-v2 .rail-foot{ overflow:hidden; padding-inline:4px; }
+  body.neo-v2 .rail-metric b{ display:block; text-align:center; font-size:10px;
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  body.neo-v2 .semb-facts{ grid-template-columns:1fr; gap:3px 0; }
+}
+@media (max-width:820px){
+  body.neo-v2{ --lay-gutter:18px; }
+  body.neo-v2 .brand-text{ display:none; }
+  body.neo-v2 .chip #vaultName{ max-width:74px; }
+  body.neo-v2 .statusbar #sbCaps,
+  body.neo-v2 .statusbar #sbSel{ display:none; }
+  body.neo-v2 .semb-head{ gap:10px; }
+  body.neo-v2 .semb-head-main{ flex:1 1 100%; }
+}
+@media (max-height:680px){
+  body.neo-v2 .rail-foot{ display:none; }
+  body.neo-v2 .titlebar{ height:44px; flex-basis:44px; }
+  body.neo-v2 .win-btns .wb{ height:44px; }
+}
+
+/* 16.5 · 暗色主题不再在本层重复定义：styles.css 的
+   :root[data-theme="dark"] .semb-kpi / .semb-item / .nl-kpi 已覆盖同一套底色，
+   且本层「唯一半透明背景是模态遮罩」是 v6.21 起的硬约束，不能出现第二份。 */
+
+/* v6.40.0 · 正文大纲回归「每篇文档固定的目录列」
+   用户实测截图：悬浮窗切文档后叠加成 4 份、压住正文。根治为文档内固定列：
+   .doc-scroll（正文，flex:1）+ .outline（目录，固定 188px）同属 .doc-layout，
+   随文档重绘自然重建，一篇文档永远只有一份目录。不再悬浮/拖动/持久化。
+   正文阅读宽度沿用上方 §doc-body 的 76ch（--lay-measure），此处不重复定义。 */
+body.neo-v2 .outline{
+  position:static;flex:0 0 188px;width:188px;height:100%;max-height:none;
+  margin:0;padding:14px 8px;overflow:auto;
+  border:0;border-left:1px solid var(--line2);border-radius:0;
+  box-shadow:none;background:var(--surface);color:var(--text);backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+body.neo-v2 .outline .o-head{ color:var(--dim); }
+body.neo-v2 .outline .o-item{ color:var(--muted); }
+body.neo-v2 .outline .o-item.is-active{
+  background:var(--accent-soft);color:var(--accent);
+  border-left-color:var(--accent);font-weight:640
+}
+@media (max-width:1180px){ body.neo-v2 .outline{flex-basis:160px;width:160px} }
+
+/* v6.37.0 · 思维沉淀库按钮组/小标题：在最高优先级层再钉一次，
+   保证自主引擎浮窗内 .am-actions 恒为 flex（按钮并排、不挤成一团），
+   .am-h 恒为 flex 且右侧有发丝线，杜绝"文字挤左上角、右侧空白"。 */
+body.neo-v2 .am-actions{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px; }
+body.neo-v2 .am-h{ display:flex; align-items:center; gap:8px; }
+body.neo-v2 .am-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:6px 12px; border-radius:999px; cursor:pointer;
+  font-size:11px; font-weight:560; line-height:1.4;
+  background:var(--surface-3); border:1px solid var(--line2); color:var(--text);
+}
+body.neo-v2 .am-btn.gold{
+  background:var(--surface-3); border-color:var(--gold,var(--accent)); color:var(--gold,var(--accent));
+}
+
+/* ==========================================================================
+   v6.38.0 · 工作台收藏夹（原创增强）与行内星标
+   纪律：实色表面 + 发丝线 + 主题令牌，零毛玻璃 / 零渐变 / 零动画填充。
+   ========================================================================== */
+/* 行内星标：默认低调，收藏后用强调色点亮；不遮挡突触度数。 */
+body.neo-v2 .tree-file{ position:relative; }
+body.neo-v2 .tree-star,
+body.neo-v2 .doc-star{
+  flex:none; margin-left:6px; padding:0 5px; line-height:1;
+  font-size:13px; cursor:pointer; border:0; border-radius:6px;
+  background:var(--surface-2); color:var(--dim);
+}
+body.neo-v2 .tree-star:hover,
+body.neo-v2 .doc-star:hover{ background:var(--surface-3); color:var(--accent); }
+body.neo-v2 .tree-star.is-on,
+body.neo-v2 .doc-star.is-on{ color:var(--gold, var(--accent)); }
+
+/* 收藏夹页面 */
+body.neo-v2 .starred-view{ padding:8px 0 48px; }
+body.neo-v2 .starred-view .page-head h2{ color:var(--text); }
+body.neo-v2 .star-sec{
+  margin:18px 0; border:1px solid var(--line); border-radius:10px;
+  background:var(--surface); overflow:hidden;
+}
+body.neo-v2 .star-sec-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 16px; border-bottom:1px solid var(--line); background:var(--surface-3);
+}
+body.neo-v2 .star-sec-head h3{ margin:0 0 3px; font-size:13px; color:var(--text); font-weight:640; }
+body.neo-v2 .star-sec-head p{ margin:0; font-size:11px; color:var(--dim); }
+body.neo-v2 .star-list{ padding:6px; }
+body.neo-v2 .star-row{
+  display:flex; align-items:center; gap:10px; padding:9px 10px;
+  border-radius:7px; cursor:pointer; color:var(--text);
+}
+body.neo-v2 .star-row:hover{ background:var(--surface-3); }
+body.neo-v2 .star-row.is-missing{ opacity:.6; cursor:default; }
+body.neo-v2 .star-row-ico{ flex:none; width:18px; text-align:center; color:var(--accent); font-size:13px; }
+body.neo-v2 .star-row-main{ flex:1; min-width:0; }
+body.neo-v2 .star-row-title{
+  font-size:12px; font-weight:560; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+body.neo-v2 .star-row-sub{ font-size:10px; color:var(--dim); margin-top:2px; }
+body.neo-v2 .star-row-act{
+  flex:none; padding:3px 8px; font-size:12px; cursor:pointer;
+  border:1px solid var(--line); border-radius:6px;
+  background:var(--surface-3); color:var(--muted);
+}
+body.neo-v2 .star-row-act:hover{ color:var(--accent); border-color:var(--accent); }
+body.neo-v2 .star-row-act.is-on{ color:var(--gold, var(--accent)); }
+body.neo-v2 .star-empty{ padding:22px 16px; text-align:center; color:var(--dim); font-size:12px; }
+
+/* ═══ v6.39.0 · 全库总览（星图内嵌的真实多库星系） ═══════════════════ */
+body.neo-v2 .vault-overview .page-head h2{ color:var(--text); }
+body.neo-v2 .vault-overview .page-head p{ color:var(--muted); }
+body.neo-v2 .ov-stats{
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:12px 0 16px;
+}
+body.neo-v2 .ov-stats > div{
+  display:flex; flex-direction:column; gap:5px; padding:11px 13px;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:9px; min-width:0;
+}
+body.neo-v2 .ov-stats b{
+  font-size:15px; font-weight:650; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+body.neo-v2 .ov-stats span{ font-size:10.5px; color:var(--dim); }
+body.neo-v2 .vault-overview .xv-graph-3d{ height:300px; border-color:var(--line); }
+body.neo-v2 .vault-overview .xv-toolbar .btn{ display:inline-flex; align-items:center; gap:6px; }
+body.neo-v2 .ov-detail{ margin-top:12px; padding:12px 14px; border:1px solid var(--line); border-radius:9px; background:var(--surface-2); }
+body.neo-v2 .ov-detail .xvd-head b{ font-size:13px; color:var(--text); }
+body.neo-v2 .ov-detail .xvd-head .cnt{ font-size:10.5px; color:var(--dim); }
+body.neo-v2 .ov-detail .xv-edge-row{ cursor:pointer; }
+body.neo-v2 .ov-detail .xv-edge-row:hover{ background:var(--surface-3); }
+body.neo-v2 .ov-acts{ display:flex; gap:8px; margin:9px 0; }
+body.neo-v2 .ov-rel{ border-top:1px solid var(--line); padding-top:7px; }
+body.neo-v2 .ov-flag{
+  margin-top:8px; padding:6px 9px; border-left:2px solid var(--gold, var(--accent));
+  background:var(--surface-3); color:var(--muted); font-size:10.5px; line-height:1.6;
+}
+body.neo-v2 .ov-edge-card{ margin-top:12px; }
+body.neo-v2 .ov-edge-card h3{ color:var(--text); }
+body.neo-v2 .ov-edge-card .xv-edge-row{ font-size:11px; }
+@media (max-width:900px){ body.neo-v2 .ov-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* ═══ v6.39.0 · 星图「卡片详情」内嵌当前知识库：两个信息块本是一体 ═══ */
+body.neo-v2 .graph-card .cosmos-kb.gc-kb{
+  display:block; width:auto; padding:0 0 11px; margin:0 0 11px;
+  background:var(--surface); border:0; border-bottom:1px solid var(--line);
+  border-radius:0; box-shadow:none; -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.neo-v2 .graph-card .cosmos-kb.gc-kb .kb-kicker{
+  font-size:9.5px; letter-spacing:.8px; color:var(--dim); margin-bottom:6px;
+}
+body.neo-v2 .graph-card .cosmos-kb.gc-kb .kb-name{
+  font-size:12.5px; line-height:1.5; cursor:pointer; color:var(--text); text-shadow:none;
+}
+body.neo-v2 .graph-card .cosmos-kb.gc-kb .kb-name:hover{ color:var(--accent-strong); }
+body.neo-v2 .graph-card .cosmos-kb.gc-kb .kb-meta{
+  margin-top:5px; font-size:10px; line-height:1.6; color:var(--dim); text-shadow:none;
+}
+
+/* ═══ v6.39.0 · 关于页开发者信息与能力项目（沿用设置页卡片语言） ═══════ */
+body.neo-v2 .st-developer{
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+  padding:0 0 14px;
+}
+body.neo-v2 .st-developer > div{
+  display:flex; flex-direction:column; gap:5px; padding:12px;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:8px; min-width:0;
+}
+body.neo-v2 .st-developer span{ font-size:10px; letter-spacing:.6px; color:var(--dim); }
+body.neo-v2 .st-developer b{ font-size:12.5px; font-weight:600; color:var(--text); word-break:break-all; }
+/* 关于页「鼓励贡献 / 商用授权」方框按钮：沿用开发者信息卡片语言 */
+body.neo-v2 .st-developer-action{
+  display:flex; flex-direction:column; gap:5px; padding:12px; min-width:0; text-align:left;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
+  color:var(--text); font:inherit; cursor:pointer; transition:background .15s,border-color .15s;
+}
+body.neo-v2 .st-developer-action:hover{ background:var(--surface-3); border-color:var(--accent); }
+body.neo-v2 .st-developer-action span{ font-size:10px; letter-spacing:.6px; color:var(--accent); font-weight:600; }
+body.neo-v2 .st-developer-action b{ font-size:12.5px; font-weight:600; color:var(--text); }
+/* 局部弹层：二维码 / 商用授权 */
+body.neo-v2 .st-about-veil{
+  position:absolute; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  background:var(--surface-3);
+}
+body.neo-v2 .st-about-pop{
+  width:min(380px,86%); background:var(--surface); border:1px solid var(--line);
+  border-radius:12px; box-shadow:0 18px 48px var(--shadow); overflow:hidden;
+}
+body.neo-v2 .st-about-pop-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--line);
+}
+body.neo-v2 .st-about-pop-head b{ font-size:13px; color:var(--text); }
+body.neo-v2 .st-about-pop-x{
+  border:0; background:none; color:var(--dim); font-size:19px; line-height:1; cursor:pointer; padding:0 4px;
+}
+body.neo-v2 .st-about-pop-x:hover{ color:var(--text); }
+body.neo-v2 .st-about-pop-body{ padding:16px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+body.neo-v2 .st-about-pop-body p{ margin:0; font-size:11.5px; line-height:1.7; color:var(--muted); text-align:center; }
+body.neo-v2 .st-about-pop-body p b{ color:var(--text); }
+body.neo-v2 .st-about-pop-lead{ font-size:12.5px !important; color:var(--text) !important; font-weight:600; }
+body.neo-v2 .st-about-pop-tip{ font-size:10.5px !important; color:var(--dim) !important; }
+body.neo-v2 .st-about-qr{ width:250px; max-width:100%; height:auto; border-radius:8px; border:1px solid var(--line); }
+body.neo-v2 .st-feature-list{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:4px 0 12px;
+}
+body.neo-v2 .st-feature{
+  display:flex; align-items:flex-start; gap:10px; padding:10px 12px; text-align:left;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
+  color:var(--text); font:inherit; cursor:pointer;
+}
+body.neo-v2 .st-feature:hover{ background:var(--surface-3); border-color:var(--accent); }
+body.neo-v2 .st-feature-dot{
+  flex:none; width:7px; height:7px; margin-top:5px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+}
+body.neo-v2 .st-feature b{ display:block; font-size:12px; font-weight:600; }
+body.neo-v2 .st-feature small{ display:block; margin-top:3px; font-size:10.5px; line-height:1.6; color:var(--dim); }
+@media (max-width:900px){
+  body.neo-v2 .st-developer{ grid-template-columns:1fr; }
+  body.neo-v2 .st-feature-list{ grid-template-columns:1fr; }
+}
+
+/* ═══ v6.39.0 · 设置页重排：悬停展开一级功能目录 + 内容居中协调 ═══════ */
+body.neo-v2 .settings-view{ background:var(--surface-2); }
+body.neo-v2 .settings-nav{
+  flex-basis:216px; width:216px; padding:16px 12px;
+  background:var(--surface); border-right:1px solid var(--line);
+}
+body.neo-v2 .settings-nav-item{
+  padding:10px 12px; border:1px solid var(--line); border-radius:9px;
+  background:var(--surface-2); color:var(--muted); font-size:12.5px;
+}
+body.neo-v2 .settings-nav-item:hover,
+body.neo-v2 .settings-nav-item.is-expanded{
+  background:var(--surface-3); color:var(--text); border-color:var(--accent);
+}
+body.neo-v2 .settings-nav-item.is-active{
+  background:var(--accent-soft); color:var(--accent); border-color:var(--accent); font-weight:640;
+}
+body.neo-v2 .settings-nav-leaves{ display:none; flex-direction:column; gap:2px; padding:4px 0 6px; }
+body.neo-v2 .settings-nav-item.is-expanded + .settings-nav-leaves{ display:flex; }
+body.neo-v2 .settings-nav-leaf{
+  display:flex; align-items:center; gap:9px; width:100%;
+  padding:8px 12px; border:0; border-left:2px solid var(--accent);
+  background:var(--surface-2); color:var(--text); font:inherit; font-size:12px;
+  text-align:left; cursor:pointer;
+}
+body.neo-v2 .settings-nav-leaf:hover{ background:var(--accent-soft); color:var(--accent); }
+body.neo-v2 .st-leaf-dot{
+  flex:none; width:5px; height:5px; border-radius:50%; background:var(--accent);
+}
+body.neo-v2 .settings-pane{ padding:22px 30px 48px; background:var(--surface-2); }
+body.neo-v2 .settings-pane > .st-section{ max-width:940px; margin:0 auto; }
+body.neo-v2 .st-sec-head{ margin-bottom:14px; }
+body.neo-v2 .st-sec-head h2{ font-size:19px; letter-spacing:.3px; }
+body.neo-v2 .st-sec-head p{ max-width:760px; line-height:1.75; }
+body.neo-v2 .st-card{ padding:14px 18px; }
+body.neo-v2 .st-linklist{ padding:4px 10px; }
+body.neo-v2 .st-link{ padding:13px 8px; }
+body.neo-v2 .st-svc{ padding:12px 13px; }
+body.neo-v2 .st-about-detail{ margin-top:12px; }
+body.neo-v2 .st-about-detail .st-sec-head{ margin:0 0 12px; }
+body.neo-v2 .st-about-detail .st-sec-head h2{ font-size:14px; }
+body.neo-v2 .st-about-detail .st-sec-head p{ font-size:11px; }
+@media (max-width:900px){
+  body.neo-v2 .settings-nav{ flex-basis:184px; width:184px; }
+  body.neo-v2 .settings-pane{ padding:16px 18px 36px; }
+}
+
+/* ═══ v6.39.0 · 星图标签可读性：实色胶囊 + 后方标签不再淡到看不见 ═════ */
+body.neo-v2 .cosmos-label{
+  max-width:190px; overflow:hidden; text-overflow:ellipsis;
+  background:var(--surface); color:var(--text);
+  border:1px solid var(--line2); border-radius:999px;
+  box-shadow:var(--nc-shadow);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.neo-v2 .cosmos-label:hover,
+body.neo-v2 .cosmos-label.is-hover{
+  background:var(--surface-2); border-color:var(--accent); color:var(--accent-strong);
+}
+body.neo-v2 .cosmos-label.is-cross{
+  background:var(--surface-2); color:var(--accent); border-color:var(--accent);
+}
+body.neo-v2 .cosmos-label.is-pinned{
+  border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft), var(--nc-shadow);
+}
+body.neo-v2 .cosmos-label.is-dim{ opacity:.62 !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v6.40.0 · INTERNATIONAL DESIGN REFINEMENT（国际风格设计强化）
+   纪律：全部规则限定 body.neo-v2；实色表面 + 发丝线 + 主题令牌；
+   零毛玻璃 / 零渐变填充；新增信息一律来自真实数据，不造占位值。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1) 数字统一等宽：读数、计数、指标在任何视图都对齐，避免跳动（国际排版惯例）。 */
+body.neo-v2 .st-about-grid b,
+body.neo-v2 .ov-stats b,
+body.neo-v2 .ov-scale-num,
+body.neo-v2 .semb-kpi b{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:"tnum" 1; }
+
+/* 2) 关于页能力矩阵：源码 totals 扩到 7 维后按宽度自适应，不留孤行。 */
+body.neo-v2 .st-about-grid{ grid-template-columns:repeat(7,minmax(0,1fr)); }
+@media (max-width:1180px){ body.neo-v2 .st-about-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (max-width:640px){ body.neo-v2 .st-about-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* 3) 全库总览空态的「各库规模」：真实计数的横向比例条 + 发丝线分隔。 */
+body.neo-v2 .ov-scale{ margin-top:14px; padding-top:12px; border-top:1px solid var(--line2); }
+body.neo-v2 .ov-scale-h{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px; }
+body.neo-v2 .ov-scale-h b{ font-size:11px; font-weight:640; letter-spacing:.04em; color:var(--text); }
+body.neo-v2 .ov-scale-h span{ font-size:10px; color:var(--dim); }
+body.neo-v2 .ov-scale-row{ display:grid; grid-template-columns:minmax(0,1fr) 90px auto auto; align-items:center; gap:10px; padding:5px 0; }
+body.neo-v2 .ov-scale-name{ font-size:11px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.neo-v2 .ov-scale-bar{ display:block; height:4px; border-radius:999px; background:var(--surface-3); overflow:hidden; }
+body.neo-v2 .ov-scale-bar i{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+body.neo-v2 .ov-scale-num{ font-size:10px; color:var(--muted); white-space:nowrap; }
+body.neo-v2 .ov-scale-flag{ font-size:9.5px; color:var(--gold,var(--accent)); white-space:nowrap; }
+@media (max-width:640px){ body.neo-v2 .ov-scale-row{ grid-template-columns:minmax(0,1fr) 56px auto; } body.neo-v2 .ov-scale-bar{ display:none; } }
+
+/* 4) 标题层级与 kicker 字距：收紧大标题、放开小标签，形成国际化的层级对比。 */
+body.neo-v2 .page-head h2{ letter-spacing:-.018em; }
+body.neo-v2 .page-head p{ letter-spacing:.004em; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v10.18.7 全库总览重设计：学习星图视觉语言（深空底 / 发光节点 / 领域色 /
+   HUD 卡 / 图例胶囊 / 点击聚焦），把"3D 球 + 裸表格"升级为"星系 + 库域卡片网格"。
+   全部实色实线，零毛玻璃 / 零渐变填充；读数一律等宽对齐；数据全部来自真实扫描。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 标题：星图式 glyph + 主标题，层级 contrasted */
+body.neo-v2 .ov-head-title{ display:flex; flex-direction:column; gap:2px; }
+body.neo-v2 .ov-head h2{ display:flex; align-items:center; gap:9px; }
+body.neo-v2 .ov-head-glyph{
+  width:11px; height:11px; border-radius:50%; flex:none;
+  background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+}
+
+/* KPI 条：星图 HUD 卡片化，数值等宽 + 一行真实副读数 */
+body.neo-v2 .ov-stats.ov-kpi{ gap:1px; background:var(--line2); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+body.neo-v2 .ov-kpi-cell{
+  display:flex; flex-direction:column; gap:2px; padding:12px 15px;
+  background:var(--surface); min-width:0;
+}
+body.neo-v2 .ov-kpi-cell b{ font-size:19px; font-weight:660; color:var(--text); letter-spacing:-.02em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.neo-v2 .ov-kpi-cell span{ font-size:10.5px; color:var(--dim); }
+body.neo-v2 .ov-kpi-cell i{ font-size:9.5px; color:var(--muted); font-style:normal; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.neo-v2 .ov-kpi-cell.is-current b{ color:var(--gold,var(--accent)); }
+@media (max-width:900px){ body.neo-v2 .ov-stats.ov-kpi{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* 星系卡：加厚上边框强调"主视图"地位 */
+body.neo-v2 .ov-galaxy-card{ border-top:2px solid var(--accent); }
+body.neo-v2 .ov-galaxy-card > h3{ display:flex; align-items:center; justify-content:space-between; }
+
+/* 图例：新增"已停用"斜纹色块，与启用态徽标同口径 */
+body.neo-v2 .xv-legend .sw-off{
+  background:repeating-linear-gradient(45deg,var(--dim) 0 2px,transparent 2px 4px);
+  border:1px solid var(--line2);
+}
+
+/* 库域卡片网格：星图节点卡的下钻面，每库一张真读数卡 */
+body.neo-v2 .ov-section{ margin-top:14px; }
+body.neo-v2 .ov-section-h{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:9px; }
+body.neo-v2 .ov-section-h h3{ font-size:13px; font-weight:640; color:var(--text); }
+body.neo-v2 .ov-section-h span{ font-size:10px; color:var(--dim); }
+body.neo-v2 .ov-vault-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:9px;
+}
+body.neo-v2 .ov-vault-card{
+  display:flex; flex-direction:column; gap:8px; text-align:left; cursor:pointer;
+  padding:11px 12px; border:1px solid var(--line); border-left:3px solid var(--vc,var(--accent));
+  border-radius:9px; background:var(--surface); color:var(--text); font:inherit;
+  transition:background .12s ease,box-shadow .12s ease;
+}
+body.neo-v2 .ov-vault-card:hover{ background:var(--surface-2); box-shadow:0 1px 0 var(--line2); }
+body.neo-v2 .ov-vault-card.is-current{ background:var(--accent-soft); }
+body.neo-v2 .ov-vault-card.is-selected{ box-shadow:0 0 0 1px var(--vc,var(--accent)); }
+body.neo-v2 .ov-vc-top{ display:flex; align-items:center; gap:7px; min-width:0; }
+body.neo-v2 .ov-vc-dot{ width:8px; height:8px; border-radius:50%; flex:none; background:var(--vc,var(--accent)); }
+body.neo-v2 .ov-vc-top b{ font-size:11.5px; font-weight:620; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.neo-v2 .ov-vc-cur{
+  margin-left:auto; flex:none; font-size:9.5px; padding:1px 6px; border-radius:999px;
+  background:var(--gold,var(--accent)); color:var(--surface); font-weight:640;
+}
+body.neo-v2 .ov-vc-off{
+  margin-left:auto; flex:none; font-size:9.5px; padding:1px 6px; border-radius:999px;
+  border:1px solid var(--line2); color:var(--dim);
+}
+body.neo-v2 .ov-vc-nums{ display:flex; gap:12px; flex-wrap:wrap; }
+body.neo-v2 .ov-vc-nums span{ font-size:10px; color:var(--dim); }
+body.neo-v2 .ov-vc-nums b{ font-size:11px; color:var(--text); font-weight:620; font-variant-numeric:tabular-nums lining-nums; }
+body.neo-v2 .ov-vc-bar{ display:block; height:3px; border-radius:999px; background:var(--surface-3); overflow:hidden; }
+body.neo-v2 .ov-vc-bar i{ display:block; height:100%; border-radius:999px; }
+body.neo-v2 .ov-vc-flag{ font-size:9.5px; color:var(--gold,var(--accent)); }
+
+/* 关联明细：强度条替代裸数字， dose 与星图边权重同视觉 */
+body.neo-v2 .ov-rel-row{ grid-template-columns:minmax(0,1fr) 84px 40px auto; align-items:center; gap:9px; }
+body.neo-v2 .xe-wbar{ display:block; height:4px; border-radius:999px; background:var(--surface-3); overflow:hidden; }
+body.neo-v2 .xe-wbar i{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+body.neo-v2 .xvd-head b{ display:inline-flex; align-items:center; gap:7px; }
+
+/* v10.18.7：命令面板检索结果项在拖拽标题栏内必须 no-drag，否则点击被窗口拖拽吞掉。
+   与 styles.css 基础层同口径，在最后加载的 v7 层再钉一次，确保任何视觉层组合下都可点击跳转。 */
+body.neo-v2 .cmd-res,
+body.neo-v2 .cmd-cmd,
+body.neo-v2 .cmd-res *,
+body.neo-v2 .cmd-cmd *{-webkit-app-region:no-drag}

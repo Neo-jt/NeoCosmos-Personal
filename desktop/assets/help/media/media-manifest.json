@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-04T07:04:23.414Z",
+  "note": "NeoCosmos 离线帮助媒体包：星空关系网络插画（程序化绘制，离线可用，非知识库内容）。",
+  "files": [
+    {
+      "name": "help-cosmos-overview.png",
+      "w": 1280,
+      "h": 800
+    },
+    {
+      "name": "help-node-detail.png",
+      "w": 1280,
+      "h": 800
+    },
+    {
+      "name": "help-graph-view.png",
+      "w": 1280,
+      "h": 800
+    },
+    {
+      "name": "help-shortcuts.png",
+      "w": 1280,
+      "h": 800
+    }
+  ]
+}

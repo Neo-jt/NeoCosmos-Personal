@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NeoLink 原创品牌标记 · 突触花冠 (Synaptic Rosette)
+     作者：宋锦涛 · 联系方式：13869162267
+     几何构造：三层节点环（3 / 6 / 9），层间旋转黄金角偏移；
+     同层节点连成同心环，跨层连接呈螺旋下降的层级链 ——
+     关系有层级、有类型，节点是关系交汇处的投影。
+     本文件由 tools/make-icon.mjs 依据与 PNG/ICO 完全相同的几何数据生成。
+     独立原创设计，不复制任何第三方产品之名称、配色、图标、轮廓或构图。 -->
+<svg width="256" height="256" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NeoLink">
+  <defs>
+    <radialGradient id="nkBg" cx="50%" cy="46%" r="66%">
+      <stop offset="0%" stop-color="#2C1A63"/>
+      <stop offset="46%" stop-color="#180F3C"/>
+      <stop offset="100%" stop-color="#080A18"/>
+    </radialGradient>
+    <radialGradient id="nkCore" cx="36%" cy="32%" r="74%">
+      <stop offset="0%" stop-color="#E2D9FF"/>
+      <stop offset="42%" stop-color="#B398FF"/>
+      <stop offset="100%" stop-color="#5B3AD4"/>
+    </radialGradient>
+    <radialGradient id="nkGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.40"/>
+      <stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="nkL0" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="16.7%" stop-color="#C9B4FF"/><stop offset="50.0%" stop-color="#C9B4FF"/><stop offset="83.3%" stop-color="#C9B4FF"/></linearGradient><linearGradient id="nkL1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="8.3%" stop-color="#9E8CFF"/><stop offset="25.0%" stop-color="#9E8CFF"/><stop offset="41.7%" stop-color="#9E8CFF"/><stop offset="58.3%" stop-color="#9E8CFF"/><stop offset="75.0%" stop-color="#9E8CFF"/><stop offset="91.7%" stop-color="#9E8CFF"/></linearGradient><linearGradient id="nkL2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="5.6%" stop-color="#46E0FF"/><stop offset="16.7%" stop-color="#46E0FF"/><stop offset="27.8%" stop-color="#46E0FF"/><stop offset="38.9%" stop-color="#46E0FF"/><stop offset="50.0%" stop-color="#46E0FF"/><stop offset="61.1%" stop-color="#46E0FF"/><stop offset="72.2%" stop-color="#46E0FF"/><stop offset="83.3%" stop-color="#46E0FF"/><stop offset="94.4%" stop-color="#46E0FF"/></linearGradient>
+  </defs>
+
+  <!-- 底盘 -->
+  <circle cx="32" cy="32" r="32" fill="url(#nkBg)"/>
+  <circle cx="32" cy="32" r="32" fill="url(#nkGlow)"/>
+
+  <!-- 同层同心弧（骨架） -->
+  <line x1="41.12" y1="32.00" x2="27.44" y2="39.90" stroke="#7A85E0" stroke-opacity="0.50" stroke-width="0.141" stroke-linecap="round"/>
+  <line x1="27.44" y1="39.90" x2="27.44" y2="24.10" stroke="#7A85E0" stroke-opacity="0.50" stroke-width="0.141" stroke-linecap="round"/>
+  <line x1="27.44" y1="24.10" x2="41.12" y2="32.00" stroke="#7A85E0" stroke-opacity="0.50" stroke-width="0.141" stroke-linecap="round"/>
+  <line x1="43.35" y1="44.17" x2="27.13" y2="47.91" stroke="#7A85E0" stroke-opacity="0.44" stroke-width="0.125" stroke-linecap="round"/>
+  <line x1="27.13" y1="47.91" x2="15.79" y2="35.74" stroke="#7A85E0" stroke-opacity="0.44" stroke-width="0.125" stroke-linecap="round"/>
+  <line x1="15.79" y1="35.74" x2="20.65" y2="19.83" stroke="#7A85E0" stroke-opacity="0.44" stroke-width="0.125" stroke-linecap="round"/>
+  <line x1="20.65" y1="19.83" x2="36.87" y2="16.09" stroke="#7A85E0" stroke-opacity="0.44" stroke-width="0.125" stroke-linecap="round"/>
+  <line x1="36.87" y1="16.09" x2="48.21" y2="28.26" stroke="#7A85E0" stroke-opacity="0.44" stroke-width="0.125" stroke-linecap="round"/>
+  <line x1="48.21" y1="28.26" x2="43.35" y2="44.17" stroke="#7A85E0" stroke-opacity="0.44" stroke-width="0.125" stroke-linecap="round"/>
+  <line x1="30.36" y1="55.46" x2="15.66" y2="48.92" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="15.66" y1="48.92" x2="8.61" y2="34.46" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="8.61" y1="34.46" x2="12.50" y2="18.85" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="12.50" y1="18.85" x2="25.52" y2="9.39" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="25.52" y1="9.39" x2="41.57" y2="10.51" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="41.57" y1="10.51" x2="53.14" y2="21.69" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="53.14" y1="21.69" x2="54.82" y2="37.69" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="54.82" y1="37.69" x2="45.82" y2="51.03" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+  <line x1="45.82" y1="51.03" x2="30.36" y2="55.46" stroke="#7A85E0" stroke-opacity="0.38" stroke-width="0.109" stroke-linecap="round"/>
+
+  <!-- 层级连接链（外 → 中 → 内） -->
+  <path d="M43.35 44.17L41.12 32.00 M27.13 47.91L27.44 39.90 M15.79 35.74L27.44 39.90 M20.65 19.83L27.44 24.10 M36.87 16.09L27.44 24.10 M48.21 28.26L41.12 32.00" stroke="url(#nkL0)" stroke-width="0.342" stroke-linecap="round" fill="none" opacity="0.82"/>
+  <path d="M30.36 55.46L27.13 47.91 M15.66 48.92L27.13 47.91 M8.61 34.46L15.79 35.74 M12.50 18.85L20.65 19.83 M25.52 9.39L20.65 19.83 M41.57 10.51L36.87 16.09 M53.14 21.69L48.21 28.26 M54.82 37.69L48.21 28.26 M45.82 51.03L43.35 44.17" stroke="url(#nkL1)" stroke-width="0.291" stroke-linecap="round" fill="none" opacity="0.72"/>
+  
+
+  <!-- 外围细环 + 内侧装饰环 -->
+  <circle cx="32" cy="32" r="28.320" stroke="#A9B8E8" stroke-opacity="0.42" stroke-width="0.8" fill="none"/>
+  <circle cx="32" cy="32" r="27.040" stroke="#8FA0D8" stroke-opacity="0.16" stroke-width="0.6" fill="none"/>
+
+  <!-- 三层节点 -->
+  <circle cx="41.12" cy="32.00" r="1.472" fill="#C9B4FF"/>
+  <circle cx="27.44" cy="39.90" r="1.472" fill="#C9B4FF"/>
+  <circle cx="27.44" cy="24.10" r="1.472" fill="#C9B4FF"/>
+  <circle cx="43.35" cy="44.17" r="1.088" fill="#9EE9FF"/>
+  <circle cx="27.13" cy="47.91" r="1.088" fill="#9EE9FF"/>
+  <circle cx="15.79" cy="35.74" r="1.088" fill="#9EE9FF"/>
+  <circle cx="20.65" cy="19.83" r="1.088" fill="#9EE9FF"/>
+  <circle cx="36.87" cy="16.09" r="1.088" fill="#9EE9FF"/>
+  <circle cx="48.21" cy="28.26" r="1.088" fill="#9EE9FF"/>
+  <circle cx="30.36" cy="55.46" r="0.800" fill="#67E8F9"/>
+  <circle cx="15.66" cy="48.92" r="0.800" fill="#67E8F9"/>
+  <circle cx="8.61" cy="34.46" r="0.800" fill="#67E8F9"/>
+  <circle cx="12.50" cy="18.85" r="0.800" fill="#67E8F9"/>
+  <circle cx="25.52" cy="9.39" r="0.800" fill="#67E8F9"/>
+  <circle cx="41.57" cy="10.51" r="0.800" fill="#67E8F9"/>
+  <circle cx="53.14" cy="21.69" r="0.800" fill="#67E8F9"/>
+  <circle cx="54.82" cy="37.69" r="0.800" fill="#67E8F9"/>
+  <circle cx="45.82" cy="51.03" r="0.800" fill="#67E8F9"/>
+
+  <!-- 中心核：圆角菱形 -->
+  <path d="M35.68 32.00L35.67 32.11L35.64 32.27L35.59 32.45L35.52 32.64L35.43 32.85L35.32 33.07L35.20 33.28L35.06 33.50L34.90 33.72L34.73 33.94L34.55 34.15L34.35 34.35L34.15 34.55L33.94 34.73L33.72 34.90L33.50 35.06L33.28 35.20L33.07 35.32L32.85 35.43L32.64 35.52L32.45 35.59L32.27 35.64L32.11 35.67L32.00 35.68L31.89 35.67L31.73 35.64L31.55 35.59L31.36 35.52L31.15 35.43L30.93 35.32L30.72 35.20L30.50 35.06L30.28 34.90L30.06 34.73L29.85 34.55L29.65 34.35L29.45 34.15L29.27 33.94L29.10 33.72L28.94 33.50L28.80 33.28L28.68 33.07L28.57 32.85L28.48 32.64L28.41 32.45L28.36 32.27L28.33 32.11L28.32 32.00L28.33 31.89L28.36 31.73L28.41 31.55L28.48 31.36L28.57 31.15L28.68 30.93L28.80 30.72L28.94 30.50L29.10 30.28L29.27 30.06L29.45 29.85L29.65 29.65L29.85 29.45L30.06 29.27L30.28 29.10L30.50 28.94L30.72 28.80L30.93 28.68L31.15 28.57L31.36 28.48L31.55 28.41L31.73 28.36L31.89 28.33L32.00 28.32L32.11 28.33L32.27 28.36L32.45 28.41L32.64 28.48L32.85 28.57L33.07 28.68L33.28 28.80L33.50 28.94L33.72 29.10L33.94 29.27L34.15 29.45L34.35 29.65L34.55 29.85L34.73 30.06L34.90 30.28L35.06 30.50L35.20 30.72L35.32 30.93L35.43 31.15L35.52 31.36L35.59 31.55L35.64 31.73L35.67 31.89Z" fill="url(#nkCore)"/>
+  <ellipse cx="31.190" cy="31.117" rx="1.030" ry="0.810" fill="#FFFFFF" fill-opacity="0.78"/>
+</svg>

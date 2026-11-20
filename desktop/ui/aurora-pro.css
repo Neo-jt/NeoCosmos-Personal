@@ -1,0 +1,467 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   AURORA PRO · v6.14.0 · "Editorial Precision / 编辑级精密"
+   ───────────────────────────────────────────────────────────────────────────
+   这是继 AURORA（v6.9）之后的第二代设计层，解决的问题不是"好不好看"，
+   而是「信息架构对不对、排版有没有呼吸、每个数字是否站得住」：
+
+     · 三段式标题栏：品牌 / 全局命令 / 上下文，命令轨用绝对定位真正落在中轴
+     · 导航轨从 76px 图标塔升级为 208px 分组导航（含功能说明），可一键折叠
+     · 舞台引入阅读宽度（≤76ch）与统一栅格，覆盖视图不再顶天立地
+     · 状态栏变成仪器读数：等宽数字、明确分组、真实引擎状态
+     · 能力中枢用编辑级排印：大字阶落差、单一强调色、零装饰性渐变
+
+   ── 架构纪律（与 v6.9 一脉相承） ────────────────────────────────────────
+   ① 本文件是**叠加层**，加载在 design-system.css 之后，不改任何历史规则；
+   ② 所有规则挂在 body.pro-layout 下，移除该 class 即完整回退到 6.13 观感；
+   ③ 颜色只经 --ds-* / --* 变量，深色主题、五种强调色、高对比度全部继承；
+   ④ 不引入字体文件、不联网、不加载图片；所有质感由排版、留白、发丝线完成；
+   ⑤ 尊重 prefers-reduced-motion 与外观面板的动效开关。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ 0 · PRO 令牌 ═══════════════════════════════════════════════════════ */
+body.pro-layout{
+  /* v6.18.0 几何令牌单一真源：与 NORTHSTAR 层取同一组值。
+     此前两层各自定义 56/208/28 与 48/188/24，同特异性下后加载者覆盖，
+     用户在外观面板切换「工程级界面」时标题栏、导航轨、阅读宽会整页跳变。
+     现在两层只叠加视觉（颜色 / 字阶 / 密度），几何恒定。 */
+  --pro-rail-w:188px;
+  --pro-rail-w-mini:56px;
+  --pro-title-h:48px;
+  --pro-status-h:28px;
+  --pro-gutter:24px;
+  --pro-measure:72ch;
+  --pro-ink:var(--ds-ink);
+  --pro-ink-2:var(--ds-ink-2);
+  --pro-ink-3:var(--ds-ink-3);
+  --pro-line:var(--ds-line);
+  --pro-line-2:var(--ds-line-2);
+  --pro-surface:var(--ds-surface);
+  --pro-surface-2:var(--ds-surface-2);
+  --pro-surface-3:var(--ds-surface-3);
+  --pro-accent:var(--ds-accent);
+  --pro-accent-soft:var(--ds-accent-soft);
+  --pro-ease:var(--ds-ease-emph);
+  font-feature-settings:"tnum" 1,"cv02" 1,"ss01" 1;
+}
+
+/* ═══ 1 · 标题栏：三段式 + 真正居中的命令轨 ═════════════════════════════ */
+body.pro-layout .titlebar{
+  height:var(--pro-title-h);flex-basis:var(--pro-title-h);
+  gap:0;padding:0 0 0 18px;
+  background:color-mix(in srgb,var(--ds-surface) 92%,transparent);
+  border-bottom:1px solid var(--pro-line);
+}
+body.pro-layout .titlebar::before{opacity:.45;height:1px}
+body.pro-layout .brand{flex:0 0 196px;gap:11px}
+body.pro-layout .brand-mark{width:30px;height:30px;border-radius:9px}
+body.pro-layout .brand-text{gap:1px;flex-direction:column;align-items:flex-start}
+body.pro-layout .brand-text b{font-size:14px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+body.pro-layout .brand-text i{
+  font-size:9px;letter-spacing:.1em;border:0;padding:0;color:var(--pro-ink-3);
+  font-family:var(--ds-mono);opacity:.85;
+}
+/* ── v6.15 三段式标题栏（排版根因修复） ─────────────────────────────────
+   v6.14 把命令轨用 position:absolute;left:50% 钉在窗口中轴，但右侧工具组 +
+   版本切换 + 当前库 + 窗口控制实测占 616px（x=824..1440）。命令轨宽 460px
+   → x=490..950，与右侧**重叠 126px**（用户红框标出的正是这里）。
+   真实的一线做法是三段式：品牌固定 / 中段弹性且命令轨在其中居中 /
+   右段上下文固定。命令轨改回文档流中的 flex 项，由左右两个拖拽区平分
+   剩余空间，永不与右侧控件相交；窗口变窄时命令轨先收缩，右侧始终完整。 */
+body.pro-layout .drag{flex:1 1 auto;min-width:8px}
+body.pro-layout .drag-right{flex:1 1 auto;min-width:8px}
+body.pro-layout .cmdbar{
+  position:relative;left:auto;top:auto;transform:none;
+  flex:0 1 auto;width:min(420px,32vw);min-width:200px;height:36px;z-index:3;
+  margin:0 auto;
+  border-radius:11px;border:1px solid var(--pro-line-2);
+  background:color-mix(in srgb,var(--ds-surface-2) 92%,transparent);
+  box-shadow:var(--ds-e1);
+}
+body.pro-layout .cmdbar:focus-within{
+  background:var(--pro-surface);border-color:hsl(var(--ds-ah) var(--ds-as) var(--ds-al) / .6);
+  box-shadow:var(--ds-ring);
+}
+body.pro-layout .cmdbar input{font-size:12.5px}
+body.pro-layout .cmd-results{top:44px}
+body.pro-layout .tb-actions{
+  gap:1px;padding-right:12px;margin-right:12px;
+  border-right:1px solid var(--pro-line);
+}
+body.pro-layout .tb-actions .wb{width:32px;height:32px;border-radius:9px}
+body.pro-layout .edition-seg{margin-right:12px;padding:3px;border-radius:10px}
+body.pro-layout .chip-vault{height:32px}
+body.pro-layout .win-btns{margin-left:8px}
+body.pro-layout .win-btns .wb{width:44px;height:var(--pro-title-h)}
+
+/* ═══ 2 · 导航轨：分组 + 说明 + 折叠 ═════════════════════════════════════ */
+body.pro-layout .rail{
+  width:var(--pro-rail-w);flex-basis:var(--pro-rail-w);
+  padding:14px 0 0;background:var(--pro-surface-2);
+  transition:width var(--ds-t3) var(--pro-ease),flex-basis var(--ds-t3) var(--pro-ease);
+}
+body.pro-layout .rail-scroll{
+  align-items:stretch;gap:2px;padding:0 10px 14px;
+}
+body.pro-layout .rail-group{
+  flex:0 0 auto;padding:16px 12px 6px;
+  font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--pro-ink-3);opacity:.78;white-space:nowrap;
+}
+body.pro-layout .rail-item{
+  width:100%;flex-direction:row;align-items:center;justify-content:flex-start;
+  gap:12px;padding:9px 12px;border-radius:10px;text-align:left;
+  color:var(--pro-ink-2);
+}
+body.pro-layout .rail-item .ico{width:19px;height:19px;flex:0 0 19px;stroke-width:1.6}
+body.pro-layout:not(.pro-rail-collapsed) .rail-item span{display:block;font-size:12.5px;font-weight:560;letter-spacing:0}
+body.pro-layout .rail-item small{
+  display:block;font-size:10px;line-height:1.35;color:var(--pro-ink-3);
+  margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+body.pro-layout .rail-item .rail-txt{min-width:0;flex:1 1 auto}
+body.pro-layout .rail-item:hover{background:var(--pro-surface-3);color:var(--pro-ink);transform:none}
+body.pro-layout .rail-item.is-active{
+  background:var(--pro-accent-soft);color:var(--pro-accent);
+}
+body.pro-layout .rail-item.is-active::before{
+  left:0;top:50%;width:3px;height:20px;border-radius:0 3px 3px 0;
+  background:var(--pro-accent);
+}
+body.pro-layout .rail-item.is-active small{color:var(--pro-accent);opacity:.78}
+body.pro-layout .rail-foot{padding:10px 14px 8px;gap:2px;align-items:stretch}
+body.pro-layout .rail-metric{justify-content:space-between;padding:4px 2px}
+body.pro-layout .rail-metric b{font-size:12px;font-family:var(--ds-mono);font-weight:650}
+body.pro-layout .rail-metric span{font-size:10px}
+body.pro-layout .rail-toggle{
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;width:100%;
+  margin:6px 0 0;padding:8px 12px;border:0;border-top:1px solid var(--pro-line);
+  background:transparent;color:var(--pro-ink-3);font-size:11px;cursor:pointer;
+  -webkit-app-region:no-drag;
+}
+body.pro-layout .rail-toggle:hover{color:var(--pro-ink);background:var(--pro-surface-3)}
+body.pro-layout .rail-toggle svg{width:15px;height:15px;flex:0 0 15px}
+
+/* 折叠态：回到图标轨，但保留 hover 时原生 title 的提示 */
+body.pro-layout.pro-rail-collapsed .rail,
+body.pro-layout.pro-rail-collapsed .rail{width:var(--pro-rail-w-mini);flex-basis:var(--pro-rail-w-mini)}
+body.pro-layout.pro-rail-collapsed .rail-scroll{padding:0 8px 14px;align-items:center}
+body.pro-layout.pro-rail-collapsed .rail-item{
+  width:52px;flex-direction:column;gap:4px;padding:9px 0;justify-content:center;
+}
+body.pro-layout.pro-rail-collapsed .rail-item .rail-txt,
+body.pro-layout.pro-rail-collapsed .rail-group,
+body.pro-layout.pro-rail-collapsed .rail-metric span,
+body.pro-layout.pro-rail-collapsed .rail-toggle span{display:none}
+body.pro-layout.pro-rail-collapsed .rail-foot{padding:8px 6px;align-items:center}
+body.pro-layout.pro-rail-collapsed .rail-metric{justify-content:center}
+body.pro-layout.pro-rail-collapsed .rail-toggle{justify-content:center;padding:8px 0}
+body.pro-layout.pro-rail-collapsed .rail-item.is-active::before{left:-8px}
+
+/* ═══ 3 · 舞台：阅读宽度与统一栅格 ═══════════════════════════════════════ */
+body.pro-layout .deck-view.is-active{animation:pro-view-in 180ms var(--pro-ease) both}
+@keyframes pro-view-in{from{opacity:.55;transform:translateY(3px)}to{opacity:1;transform:none}}
+body.pro-layout .page{
+  max-width:1440px;margin:0 auto;padding:36px var(--pro-gutter) 64px;
+}
+body.pro-layout .page-head{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--pro-line)}
+body.pro-layout .page-head h2{
+  font-size:27px;font-weight:680;letter-spacing:-.032em;line-height:1.25;color:var(--pro-ink);
+}
+body.pro-layout .page-head p{
+  font-size:12.5px;line-height:1.85;color:var(--pro-ink-3);max-width:88ch;margin-top:9px;
+}
+body.pro-layout .card{
+  padding:20px;border-radius:14px;border:1px solid var(--pro-line);
+  background:var(--pro-surface);box-shadow:var(--ds-e1);
+  transition:border-color var(--ds-t2) var(--pro-ease),box-shadow var(--ds-t2) var(--pro-ease),transform var(--ds-t2) var(--pro-ease);
+}
+body.pro-layout .card:hover{border-color:var(--pro-line-2);box-shadow:var(--ds-e2);transform:none}
+body.pro-layout .card h3{font-size:13.5px;font-weight:650;letter-spacing:-.01em;margin-bottom:14px}
+body.pro-layout .btn{
+  border-radius:9px;font-size:12px;font-weight:560;padding:7px 14px;
+  transition:background var(--ds-t1) var(--pro-ease),border-color var(--ds-t1) var(--pro-ease),transform var(--ds-t1) var(--pro-ease);
+}
+body.pro-layout .btn:active{transform:scale(.98)}
+body.pro-layout .btn:focus-visible{outline:none;box-shadow:var(--ds-ring)}
+body.pro-layout .kv{font-size:12px;padding:7px 0}
+/* 文档台：可读行长，而不是把正文铺满整块玻璃 */
+body.pro-layout .doc-body{max-width:var(--pro-measure);margin-left:auto;margin-right:auto;font-size:14.5px;line-height:1.9}
+body.pro-layout .doc-scroll{padding:36px 48px 96px}
+body.pro-layout .pane-left{width:288px;flex-basis:288px}
+body.pro-layout .pane-right{width:312px;flex-basis:312px}
+body.pro-layout .pane-mid{background:var(--pro-surface)}
+
+/* ── v6.15 覆盖视图：填满舞台，消除企业管理页右侧半屏空白 ───────────────
+   .deck-view.is-active 是 flex 容器，而 .ent-shell 是它的 flex 子项且原来
+   只写了 height:100%，没有宽度 —— flex-basis:auto 让它按内容撑到 897px，
+   舞台实测 1232px，右侧 335px 全白（用户截图实测）。
+   这里显式给 width:100% + flex:1 1 auto，外壳永远与舞台等宽。 */
+body.pro-layout .deck-view.is-active > .ent-shell,
+body.pro-layout .ent-shell{width:100%;max-width:100%;flex:1 1 auto;min-width:0}
+body.pro-layout .ent-content{min-width:0}
+body.pro-layout .hub-stats{
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px;
+}
+body.pro-layout .hub-stat{
+  flex-direction:row;align-items:baseline;justify-content:center;gap:10px;padding:17px 12px;
+}
+body.pro-layout .hub-stat b{font-size:27px;letter-spacing:-.03em}
+body.pro-layout .hub-stat span{font-size:11px;letter-spacing:.02em}
+body.pro-layout .hub-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+body.pro-layout .hub-grid .card{padding:22px;display:flex;flex-direction:column}
+body.pro-layout .hub-grid .card h3{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--pro-ink-3);margin-bottom:16px;
+}
+body.pro-layout .hub-link{padding:14px;border-radius:12px}
+body.pro-layout .hub-link-text b{font-size:13.5px}
+body.pro-layout .hub-link-text i{font-size:11px;line-height:1.5}
+body.pro-layout .hub-link:focus-visible,
+body.pro-layout .ent-nav-item:focus-visible{outline:none;box-shadow:var(--ds-ring)}
+body.pro-layout .hub-note{max-width:86ch;line-height:1.8}
+
+/* ═══ 4 · 状态栏：仪器读数 ═══════════════════════════════════════════════ */
+body.pro-layout .statusbar{
+  height:var(--pro-status-h);flex-basis:var(--pro-status-h);
+  padding:0 18px;gap:12px;font-size:11px;
+}
+body.pro-layout .sb-item{font-variant-numeric:tabular-nums}
+body.pro-layout #sbPath{font-family:var(--ds-mono);font-size:10.5px;opacity:.9}
+body.pro-layout .sb-badge{font-family:var(--ds-mono);font-size:9.5px;letter-spacing:.03em}
+body.pro-layout #sbLatency{font-family:var(--ds-mono);font-size:10.5px}
+
+/* ═══ 5 · 能力中枢：编辑级信息设计 ═══════════════════════════════════════ */
+.pro-hub{
+  flex:1 1 auto;min-width:0;overflow:auto;   /* 内容超高时自己滚，不溢出被舞台裁掉 */
+  max-width:1440px;margin:0 auto;width:100%;
+  padding:36px var(--pro-gutter) 72px;color:var(--pro-ink);
+}
+.pro-hub-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
+  padding-bottom:24px;margin-bottom:28px;border-bottom:1px solid var(--pro-line)}
+.pro-hub-kicker{font:700 10px/1 var(--ds-mono);letter-spacing:.2em;color:var(--pro-accent);text-transform:uppercase}
+.pro-hub h2{font-size:32px;font-weight:700;letter-spacing:-.038em;line-height:1.2;margin:11px 0 0}
+.pro-hub .pro-lede{font-size:12.5px;line-height:1.85;color:var(--pro-ink-3);max-width:86ch;margin:11px 0 0}
+.pro-hub-meta{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:0 0 auto}
+.pro-stamp{font:500 10.5px/1.5 var(--ds-mono);color:var(--pro-ink-3);text-align:right}
+.pro-stamp b{color:var(--pro-ink-2);font-weight:650}
+
+/* KPI：数字是唯一主角，标签退到背景 */
+/* 八项读数固定成 4×2 的整齐矩阵，避免 6+2 留下半行空白；窄窗口由 auto-fit 自动降列 */
+.pro-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:32px}
+.pro-kpi{
+  padding:18px 20px 16px;border:1px solid var(--pro-line);border-radius:14px;
+  background:var(--pro-surface);box-shadow:var(--ds-e1);min-width:0;
+}
+.pro-kpi .k-label{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--pro-ink-3)}
+.pro-kpi .k-value{
+  font:650 29px/1.15 var(--ds-mono);letter-spacing:-.04em;color:var(--pro-ink);
+  margin:12px 0 6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.pro-kpi .k-value.is-accent{color:var(--pro-accent)}
+/* 真实读数允许两行完整呈现（如 Electron / Node / 平台），统一高度保证卡片基线对齐 */
+.pro-kpi .k-sub{
+  font-size:10.5px;line-height:1.5;color:var(--pro-ink-3);min-height:31.5px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.pro-kpi.is-pending .k-value{color:var(--pro-ink-3);font-size:18px;letter-spacing:0}
+
+/* 分区标题 */
+.pro-section{margin:0 0 34px}
+.pro-section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.pro-section-head .s-index{font:650 10px/1 var(--ds-mono);color:var(--pro-accent);letter-spacing:.08em}
+.pro-section-head h3{font-size:16px;font-weight:660;letter-spacing:-.02em;margin:0;color:var(--pro-ink)}
+.pro-section-head .s-en{font:600 9.5px/1 var(--ds-mono);letter-spacing:.16em;color:var(--pro-ink-3);text-transform:uppercase}
+.pro-section-head .s-desc{font-size:11.5px;color:var(--pro-ink-3);margin-left:auto;text-align:right}
+.pro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start}
+
+/* 操作卡 */
+.pro-card{
+  border:1px solid var(--pro-line);border-radius:14px;background:var(--pro-surface);
+  box-shadow:var(--ds-e1);padding:20px;min-width:0;
+  transition:border-color var(--ds-t2) var(--pro-ease),box-shadow var(--ds-t2) var(--pro-ease);
+}
+.pro-card:hover{border-color:var(--pro-line-2);box-shadow:var(--ds-e2)}
+.pro-card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.pro-card-head h4{font-size:13.5px;font-weight:650;letter-spacing:-.01em;margin:0;color:var(--pro-ink)}
+.pro-card-head .c-tag{
+  margin-left:auto;flex:0 0 auto;font:600 9px/1.4 var(--ds-mono);letter-spacing:.08em;
+  color:var(--pro-ink-3);border:1px solid var(--pro-line);border-radius:5px;padding:2px 6px;
+}
+.pro-card p.pro-note{font-size:11.5px;line-height:1.75;color:var(--pro-ink-3);margin:0 0 14px}
+.pro-card p.pro-warn{
+  font-size:11px;line-height:1.7;color:var(--ds-warn);
+  background:var(--ds-warn-soft);border-left:2px solid var(--ds-warn);
+  padding:8px 10px;margin:0 0 14px;border-radius:0 6px 6px 0;
+}
+.pro-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-bottom:12px}
+.pro-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pro-field.wide{grid-column:1/-1}
+.pro-field > span{font-size:10px;font-weight:650;letter-spacing:.06em;color:var(--pro-ink-3);text-transform:uppercase}
+.pro-field input,.pro-field select,.pro-field textarea{
+  width:100%;box-sizing:border-box;font:500 12px/1.5 var(--ds-font);
+  color:var(--pro-ink);background:var(--pro-surface-2);
+  border:1px solid var(--pro-line-2);border-radius:8px;padding:7px 10px;
+  transition:border-color var(--ds-t1),box-shadow var(--ds-t1);
+}
+.pro-field textarea{min-height:60px;resize:vertical;font-family:var(--ds-mono);font-size:11px}
+.pro-field input:focus,.pro-field select:focus,.pro-field textarea:focus{
+  outline:none;border-color:var(--pro-accent);box-shadow:0 0 0 3px var(--pro-accent-soft);
+}
+.pro-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.pro-actions .btn{padding:6px 12px;font-size:11.5px}
+.pro-actions .btn.is-primary{background:var(--pro-accent);border-color:var(--pro-accent);color:var(--ds-on-accent)}
+.pro-actions .btn.is-primary:hover{background:var(--ds-accent-hover)}
+.pro-actions .btn.is-primary:disabled{opacity:.5}
+.pro-switch{
+  display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:var(--pro-ink-2);cursor:pointer;
+}
+.pro-switch input{accent-color:var(--pro-accent);width:14px;height:14px}
+
+/* 真实结果回显：默认折叠，内容一律来自 IPC 返回，绝不填充示例值 */
+.pro-out{
+  margin-top:13px;border-top:1px solid var(--pro-line);padding-top:11px;
+}
+.pro-out-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.pro-out-head .o-state{font:650 9.5px/1 var(--ds-mono);letter-spacing:.08em;padding:3px 7px;border-radius:5px}
+.o-state.ok{color:var(--ds-ok);background:var(--ds-ok-soft)}
+.o-state.err{color:var(--ds-err);background:var(--ds-err-soft)}
+.o-state.busy{color:var(--ds-info);background:var(--ds-info-soft)}
+.o-state.idle{color:var(--pro-ink-3);background:var(--pro-surface-3)}
+.pro-out-head .o-meta{font:500 9.5px/1 var(--ds-mono);color:var(--pro-ink-3)}
+.pro-out-head .o-copy{margin-left:auto}
+.pro-out pre{
+  margin:0;padding:11px 12px;max-height:230px;overflow:auto;
+  font:500 10.5px/1.65 var(--ds-mono);white-space:pre-wrap;word-break:break-word;
+  color:var(--pro-ink-2);background:var(--pro-surface-2);
+  border:1px solid var(--pro-line);border-radius:8px;
+}
+.pro-out pre:empty{display:none}
+.pro-inline-list{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.pro-chip{
+  font:500 10.5px/1.4 var(--ds-mono);color:var(--pro-ink-2);
+  border:1px solid var(--pro-line-2);background:var(--pro-surface-2);
+  border-radius:999px;padding:4px 9px;
+}
+.pro-chip b{color:var(--pro-accent);font-weight:700}
+.pro-empty{font-size:11.5px;color:var(--pro-ink-3);padding:10px 0}
+
+/* 能力矩阵：可检索的真实通道表 */
+.pro-matrix-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.pro-matrix-tools input{
+  width:240px;max-width:60vw;box-sizing:border-box;font:500 12px/1.5 var(--ds-font);
+  color:var(--pro-ink);background:var(--pro-surface-2);border:1px solid var(--pro-line-2);
+  border-radius:8px;padding:7px 10px;
+}
+.pro-matrix-tools .m-count{font:500 10.5px/1 var(--ds-mono);color:var(--pro-ink-3)}
+.pro-matrix{border:1px solid var(--pro-line);border-radius:12px;overflow:hidden;background:var(--pro-surface)}
+.pro-matrix-row{
+  display:grid;grid-template-columns:150px minmax(180px,1fr) 108px minmax(140px,1.1fr);
+  gap:12px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--pro-line);
+  font-size:11px;
+}
+.pro-matrix-row:last-child{border-bottom:0}
+.pro-matrix-row.m-head{
+  background:var(--pro-surface-2);font:700 9.5px/1.3 var(--ds-mono);
+  letter-spacing:.12em;text-transform:uppercase;color:var(--pro-ink-3);position:sticky;top:0;z-index:1;
+}
+.pro-matrix-row .m-ch{font-family:var(--ds-mono);color:var(--pro-ink);font-size:10.5px;word-break:break-all}
+.pro-matrix-row .m-api{font-family:var(--ds-mono);color:var(--pro-ink-2);font-size:10.5px;word-break:break-all}
+.pro-matrix-row .m-refs{color:var(--pro-ink-3);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-state{font:650 9px/1 var(--ds-mono);letter-spacing:.06em;padding:4px 7px;border-radius:5px;justify-self:start}
+.m-state.hub{color:var(--ds-ok);background:var(--ds-ok-soft)}
+.m-state.view{color:var(--ds-info);background:var(--ds-info-soft)}
+.m-state.none{color:var(--ds-warn);background:var(--ds-warn-soft)}
+.pro-matrix-more{
+  width:100%;padding:10px;border:0;background:var(--pro-surface-2);
+  color:var(--pro-ink-2);font-size:11px;cursor:pointer;
+}
+.pro-matrix-more:hover{background:var(--pro-surface-3)}
+
+/* 诚实边界 */
+.pro-boundary{
+  margin-top:36px;padding:20px 22px;border:1px solid var(--pro-line);
+  border-radius:14px;background:var(--pro-surface-2);
+}
+.pro-boundary h4{margin:0 0 10px;font-size:12.5px;font-weight:650;color:var(--pro-ink)}
+.pro-boundary p{margin:0 0 7px;font-size:11.5px;line-height:1.8;color:var(--pro-ink-3)}
+.pro-boundary p:last-child{margin-bottom:0}
+.pro-boundary b{color:var(--pro-ink-2);font-weight:650}
+
+/* 直达卡：不虚构功能，只把已存在的视图挂到一级入口 */
+.pro-nav-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px}
+.pro-nav-btn{
+  display:flex;flex-direction:column;gap:5px;text-align:left;
+  padding:13px 14px;border:1px solid var(--pro-line);border-radius:11px;
+  background:var(--pro-surface);color:var(--pro-ink);cursor:pointer;
+  transition:border-color var(--ds-t1),background var(--ds-t1),transform var(--ds-t1);
+}
+.pro-nav-btn:hover{border-color:var(--pro-accent);background:var(--pro-accent-soft);transform:translateY(-1px)}
+.pro-nav-btn b{font-size:12px;font-weight:640}
+.pro-nav-btn span{font-size:10.5px;line-height:1.5;color:var(--pro-ink-3)}
+.pro-nav-btn em{font:600 9px/1 var(--ds-mono);color:var(--pro-accent);letter-spacing:.1em;font-style:normal}
+
+/* ═══ 6 · 深色 / 高对比 / 减少动效 ═══════════════════════════════════════ */
+body.pro-layout.theme-dark .titlebar{background:color-mix(in srgb,var(--ds-surface) 88%,transparent)}
+body.pro-layout.theme-dark .pro-kpi,
+body.pro-layout.theme-dark .pro-card,
+body.pro-layout.theme-dark .pro-matrix{background:var(--ds-surface)}
+body.pro-layout.theme-dark .pro-out pre,
+body.pro-layout.theme-dark .pro-field input,
+body.pro-layout.theme-dark .pro-field select,
+body.pro-layout.theme-dark .pro-field textarea{background:var(--ds-surface-2)}
+body.pro-layout.theme-dark .pro-chip{background:var(--ds-surface-3)}
+body.pro-layout.reduce-motion .deck-view.is-active{animation:none}
+body.pro-layout.reduce-motion *,
+body.pro-layout.reduce-motion *::before,
+body.pro-layout.reduce-motion *::after{transition-duration:1ms !important;animation-duration:1ms !important}
+@media (prefers-reduced-motion:reduce){
+  body.pro-layout .deck-view.is-active{animation:none}
+  body.pro-layout .card,body.pro-layout .pro-card,body.pro-layout .pro-nav-btn{transition:none}
+}
+@media (forced-colors:active){
+  .pro-kpi,.pro-card,.pro-matrix,.pro-nav-btn,.pro-out pre{border:1px solid CanvasText}
+}
+
+/* ═══ 7 · 响应式：窄窗口自动收成图标轨，绝不挤压舞台 ═══════════════════ */
+@media (max-width:1180px){
+  body.pro-layout{--pro-gutter:20px}
+  body.pro-layout .cmdbar{width:min(340px,30vw)}
+  body.pro-layout .brand{flex-basis:150px}
+  body.pro-layout .pane-left{width:244px;flex-basis:244px}
+  body.pro-layout .pane-right{width:270px;flex-basis:270px}
+}
+@media (max-width:1024px){
+  body.pro-layout .rail{width:var(--pro-rail-w-mini);flex-basis:var(--pro-rail-w-mini)}
+  body.pro-layout .rail-scroll{padding:0 8px 14px;align-items:center}
+  body.pro-layout .rail-item{width:52px;flex-direction:column;gap:3px;padding:9px 0;justify-content:center}
+  body.pro-layout .rail-item .rail-txt,
+  body.pro-layout .rail-group,
+  body.pro-layout .rail-metric span,
+  body.pro-layout .rail-toggle span{display:none}
+  body.pro-layout .rail-foot{padding:8px 6px;align-items:center}
+  body.pro-layout .rail-metric{justify-content:center}
+  body.pro-layout .rail-toggle{justify-content:center;padding:8px 0}
+  body.pro-layout .rail-item.is-active::before{left:-8px}
+  body.pro-layout .cmdbar{width:min(280px,28vw)}
+  body.pro-layout .drag-right{display:none}
+}
+@media (max-width:820px){
+  body.pro-layout .titlebar{padding-left:12px}
+  body.pro-layout .brand{flex-basis:auto}
+  body.pro-layout .brand-text{display:none}
+  /* v6.15：命令轨已回到文档流，窄屏只收宽度；任何按自身宽度的百分比偏移
+     都会把它推到右侧控件上，重新制造重叠，因此显式复位为 auto。 */
+  body.pro-layout .cmdbar{width:min(220px,30vw);min-width:150px;left:auto}
+  body.pro-layout .cmdbar kbd{display:none}
+  body.pro-layout .edition-seg{display:none}
+  body.pro-layout .doc-scroll{padding:24px 20px 64px}
+  body.pro-layout .page{padding:24px 18px 48px}
+  .pro-hub{padding:24px 18px 48px}
+  .pro-matrix-row{grid-template-columns:120px minmax(140px,1fr) 84px}
+  .pro-matrix-row .m-refs{display:none}
+}
+@media (max-height:680px){
+  body.pro-layout .rail-foot{display:none}
+  body.pro-layout .titlebar{height:48px;flex-basis:48px}
+  body.pro-layout .win-btns .wb{height:48px}
+}

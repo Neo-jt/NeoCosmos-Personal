@@ -1,0 +1,17 @@
+node_modules/
+build/
+dist/
+交付/
+*.exe
+*.pfx
+*.cer
+*.key
+desktop/assets/_model/
+desktop/assets/builtin-library/
+desktop/assets/env-assets/
+desktop/assets/star-assets/
+desktop/assets/*.ttf
+desktop/assets/fonts/*.ttf
+.DS_Store
+Thumbs.db
+*.log
